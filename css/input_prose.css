@@ -1,0 +1,428 @@
+/*
+  input_prose.css — compiled to prose.css. Article typography only.
+
+  Ported from website_v3_014/input_prose.css. Two things define the look:
+
+    · Nothing is ever bold. The custom face ships one weight, so <strong>
+      becomes a thin underline instead. Tailwind Typography wants to set
+      font-weight everywhere, hence the !important overrides.
+    · Math is MathML rendered at build time, scaled by --katex-font-size,
+      so no KaTeX stylesheet or script is served.
+*/
+
+@import "tailwindcss";
+
+@plugin "@tailwindcss/typography";
+
+@import "./theme.css";
+
+/* ── Colour variables Tailwind Typography reads ───────────────────────────── */
+
+.prose {
+  font-family: var(--font-brand) !important;
+  --tw-prose-body: var(--color-black);
+  --tw-prose-headings: var(--color-black);
+  --tw-prose-bold: var(--color-black);
+  --tw-prose-links: var(--color-black);
+  --tw-prose-bullets: var(--color-black);
+  --tw-prose-counters: var(--color-black);
+  --tw-prose-quotes: var(--color-black);
+  --tw-prose-quote-borders: var(--color-black);
+  /* Inline <code>. Without this the plugin's own near-black default survives
+     into dark mode, where it lands on a light tint — the one construct on the
+     page that was genuinely unreadable. Block code is unaffected either way:
+     the plugin resets `pre code` to inherit. */
+  --tw-prose-code: var(--color-black);
+  /* Table rules, on the same values as .prose hr below so the two agree. */
+  --tw-prose-td-borders: rgba(0, 0, 0, 0.12);
+  /* .prose thead th further down draws the header rule itself; left to its
+     default this puts a second line directly under it. */
+  --tw-prose-th-borders: transparent;
+  hyphens: auto;
+  max-width: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose {
+    --tw-prose-body: var(--color-white);
+    --tw-prose-headings: var(--color-white);
+    --tw-prose-bold: var(--color-white);
+    --tw-prose-links: var(--color-white);
+    --tw-prose-counters: var(--color-white);
+    --tw-prose-bullets: var(--color-white);
+    --tw-prose-quotes: var(--color-white);
+    --tw-prose-quote-borders: var(--color-white);
+    --tw-prose-code: var(--color-white);
+    --tw-prose-td-borders: rgba(255, 255, 255, 0.14);
+  }
+}
+
+/* ── Headings: uppercase, tracked, never bold ─────────────────────────────── */
+
+/* Sizes and tracking are website_v3_014's, written out as literals.
+   Over there they come from Tailwind utility classes in the template
+   (`text-5xl md:text-6xl uppercase tracking-wider` and friends); the
+   encyclopaedia renders its markdown outside the template pipeline, so the
+   same values live here instead. The mapping, for anyone diffing the two:
+
+     3.75rem = text-6xl   2.25rem = text-4xl   1.25rem = text-xl
+     3rem    = text-5xl   1.875rem = text-3xl  1.125rem = text-lg
+     1.5rem  = text-2xl   1rem     = text-base
+     0.05em  = tracking-wider      0.025em = tracking-wide             */
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-weight: 400 !important;
+  text-transform: uppercase;
+  line-height: var(--text-line-row-space);
+  letter-spacing: 0.025em;          /* tracking-wide */
+}
+.prose h1 { letter-spacing: 0.05em; }   /* tracking-wider — h1 only */
+
+.prose h1 { font-size: 3rem;     margin-top: 5rem;   margin-bottom: 1.5rem; }
+.prose h2 { font-size: 1.875rem; margin-top: 3rem;   margin-bottom: 1.5rem; }
+.prose h3 { font-size: 1.5rem;   margin-top: 3rem;   margin-bottom: 1rem; }
+.prose h4 { font-size: 1.25rem;  margin-top: 2.5rem; margin-bottom: 0.75rem; }
+.prose h5 { font-size: 1.125rem; margin-top: 2rem;   margin-bottom: 0.5rem; }
+.prose h6 { font-size: 1rem;     margin-top: 1.5rem; margin-bottom: 0.5rem; }
+
+@media (min-width: 900px) {
+  .prose h1 { font-size: 3.75rem; }
+  .prose h2 { font-size: 2.25rem; }
+}
+
+/* ── Body copy ────────────────────────────────────────────────────────────── */
+
+/* The Typography plugin hard-codes .prose { font-size: 1rem }, which lands a
+   notch under the rest of the site. Naming --text-body here puts article copy
+   back on the same token as <body>, exactly as the reference site does. */
+.prose p {
+  text-align: justify;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  margin-bottom: 1.5rem;
+}
+
+/* Single-weight font: emphasis is an underline, not a heavier stroke. */
+.prose strong,
+.prose b {
+  font-weight: 400 !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose a:hover { opacity: 0.6; }
+
+.prose img {
+  border-radius: 0.5rem;
+  margin: 2rem 0;
+}
+
+.prose li {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.prose blockquote {
+  font-style: normal;
+  border-left-width: 2px;
+  padding-left: 1.25rem;
+  opacity: 0.8;
+}
+.prose blockquote p { text-align: left; }
+.prose blockquote p::before,
+.prose blockquote p::after { content: ""; }
+
+/* Inline code: a tint, no backticks. */
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-weight: 400 !important;
+  font-size: 0.875em;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+}
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after { content: ""; }
+
+.prose pre {
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.03);
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.5rem;
+}
+.prose pre code { font-size: 1.2em; background: none; padding: 0; }
+
+@media (prefers-color-scheme: dark) {
+  .prose :not(pre) > code { background: rgba(255, 255, 255, 0.08); }
+  .prose pre {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.prose thead th {
+  font-weight: 400 !important;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-nav);
+  font-size: 0.96em;
+  border-bottom: 1.2px solid rgba(0, 0, 0, 0.8);
+}
+@media (prefers-color-scheme: dark) {
+  .prose thead th { border-bottom-color: rgba(255, 255, 255, 0.8); }
+}
+
+.prose hr { border-color: rgba(0, 0, 0, 0.12); margin: 3rem 0; }
+@media (prefers-color-scheme: dark) {
+  .prose hr { border-color: rgba(255, 255, 255, 0.14); }
+}
+
+/* ── Math ─────────────────────────────────────────────────────────────────── */
+/* MathML renders large against HaraldText, so it is scaled down globally. */
+
+.prose math { font-size: var(--katex-font-size); }
+.prose eqn { display: block; overflow-x: auto; margin: 1.75rem 0; }
+/* !important is load-bearing here, not stylistic: KaTeX writes
+   style="color:#cc0000" onto the element itself, and an inline style beats any
+   selector, so without it this rule cannot move the colour at all.
+
+   Ratios are measured against the WORST end of each backdrop gradient — the
+   light edge #dedede and the dark end #262626 — so they hold everywhere on the
+   page, not just over the middle. The old #cc0000 managed 4.4:1 light and only
+   2.6:1 dark. */
+.prose .katex-error,
+.prose .render-error {
+  color: #911e1b !important;        /* 6.5:1 on #dedede */
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+@media (prefers-color-scheme: dark) {
+  .prose .katex-error,
+  .prose .render-error { color: #ff6b5e !important; }   /* 5.4:1 on #262626 */
+}
+
+/* Media the markdown embedded inline. */
+.prose .media-embed { width: 100%; border-radius: 0.5rem; margin: 2rem 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FLOATING TABLE OF CONTENTS
+   Built at build time from the ids addAnchors() wrote. Pure CSS — a checkbox
+   and sibling selectors. No JavaScript is loaded for this.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.article-outline-toggle {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.article-outline-label {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #171717;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.article-outline-label:hover { color: #737373; }
+.article-outline-label::before { content: "☰"; }
+.article-outline-toggle:checked ~ .article-outline-label::before { content: "✕"; }
+
+.article-outline-panel {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 4.75rem;
+  z-index: 119;
+  display: none;
+  width: min(20rem, calc(100vw - 2.5rem));
+  max-height: min(60vh, 32rem);
+  overflow-y: auto;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0.7rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+.article-outline-toggle:checked ~ .article-outline-panel { display: block; }
+
+.article-outline-heading {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #737373;
+}
+
+.article-outline-list { list-style: none; margin: 0; padding: 0; }
+.article-outline-item { margin: 0.1rem 0; }
+
+.article-outline-panel a {
+  display: block;
+  padding: 0.18rem 0 0.18rem 0.55rem;
+  font-family: var(--font-brand);
+  font-size: 0.92rem;
+  line-height: 1.25;
+  text-decoration: none;
+  color: #404040;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.article-outline-item--h3 a {
+  padding-left: 1.7rem;
+  font-size: 0.85rem;
+  color: #525252;
+}
+/* h4 appears in the outline because demoteHeadings() pushes a document's own
+   h3 sections down a level whenever its body opens with an h1. */
+.article-outline-item--h4 a {
+  padding-left: 2.85rem;
+  font-size: 0.8rem;
+  color: #737373;
+}
+.article-outline-panel a:hover { color: #171717; border-left-color: #171717; }
+
+/* Stop an in-page jump from parking the heading under the fixed nav. */
+.prose :where(h1, h2, h3, h4, h5, h6) { scroll-margin-top: 6rem; }
+
+@media (prefers-color-scheme: dark) {
+  .article-outline-label { color: #ffffff; }
+  .article-outline-label:hover { color: #a3a3a3; }
+  .article-outline-panel {
+    background: rgba(10, 10, 10, 0.9);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+  .article-outline-heading { color: #a3a3a3; }
+  .article-outline-panel a { color: #d4d4d4; }
+  .article-outline-item--h3 a { color: #a3a3a3; }
+  .article-outline-item--h4 a { color: #8f8f8f; }
+  .article-outline-panel a:hover { color: #ffffff; border-left-color: #ffffff; }
+}
+
+/* The panel is a floating overlay; on a small screen it would cover the text. */
+@media (max-width: 640px) {
+  .article-outline-panel { width: calc(100vw - 2.5rem); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   READING-WIDTH TOGGLE (JS only) — narrows the article column.
+
+   All markup is injected by javascript/reading_width.js, so nothing here
+   renders unless JS ran. The button stays hidden until the pointer enters the
+   lower-right corner zone; the outline button below it is always visible.
+
+   Every z-index in this block is only meaningful relative to the outline
+   controls, so it holds only because the script appends the zone and the button
+   into .post-container — the stacking context those controls sit in.
+
+   Note that javascript/ is deliberately outside the Tailwind --content globs,
+   so every class the script references has to be written out here as plain
+   CSS. A utility class used from that file would silently not be generated.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Transparent hover target in the very corner. It overlaps the outline button
+   completely, so the z-index below (110, under the outline button's 120) is the
+   only thing keeping it from swallowing those clicks — which works ONLY while
+   the script appends it inside .post-container, the stacking context the outline
+   button lives in. See the note beside the appendChild calls in the script. */
+.reading-corner-zone {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 6rem;
+  height: 8rem;
+  z-index: 110;
+}
+
+.reading-width-btn {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;                   /* corner slot when there's no outline button */
+  z-index: 121;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;                 /* match the outline button below it */
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #171717;
+  background: none;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;                        /* revealed on corner hover */
+  pointer-events: none;
+  transition: opacity 0.2s, color 0.2s;
+}
+.reading-width-btn:hover { color: #737373; }
+
+/* When an outline button exists, stack the width button just above it. */
+.reading-width-btn.reading-width-btn--above-outline { bottom: 3.9rem; }
+
+/* Reveal while the pointer is over the corner zone OR the button itself.
+   The button's own :hover is essential: once revealed it sits on top of the
+   zone (higher z-index) and, being a sibling rather than a child, steals the
+   hover from it — so without this the zone loses :hover the instant you touch
+   the button and it flickers/fades out under the pointer. */
+.reading-corner-zone:hover ~ .reading-width-btn,
+.reading-width-btn:hover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .reading-width-btn { color: #ffffff; }
+  .reading-width-btn:hover { color: #a3a3a3; }
+}
+
+/* Desktop-only feature: fully remove it where there's no real hover (touch/mobile),
+   so a tap can't emulate :hover and reveal/activate the button.
+
+   Resetting --reading-scale here matters because the width is remembered across
+   pages and restored from <head> before the script's own touch check can run.
+   A declaration on the element itself beats the value inherited from :root, so
+   a width saved on a desktop cannot follow the same profile onto a phone.
+
+   .post-container itself is declared in input.css; the reset sits here so the
+   whole toggle — zone, button, guard — reads as one block. Both stylesheets are
+   loaded unconditionally by base.njk, so the cross-file reference is safe. */
+@media (hover: none), (pointer: coarse) {
+  .reading-corner-zone,
+  .reading-width-btn { display: none; }
+  .post-container { --reading-scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-width-btn { transition: none; }
+}

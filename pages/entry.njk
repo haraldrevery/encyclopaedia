@@ -1,0 +1,120 @@
+---
+pagination:
+  data: library.entryPages
+  size: 1
+  alias: item
+permalink: "{{ item.permalink }}"
+layout: base.njk
+pageKind: entry
+---
+{#
+  entry.njk — one markdown document.
+
+  Sibling documents that share a title appear as tabs. The metadata strip below
+  the title always shows all seven fields; ones that fell back read "Unknown"
+  rather than being hidden, so the reader can tell the difference between
+  "written by nobody in particular" and "we forgot to say".
+
+  Category and tag links resolve through `folder.facetLinks`, not through this
+  folder's own URL. Most folders hold one subject, so a tag page built at this
+  level would list only the article being read; facetLinks points each value at
+  the nearest folder where it actually separates one thing from another.
+#}
+{% from "breadcrumb.njk" import renderCrumbs %}
+
+{% set variant = item.variant %}
+{% set folder = variant.folder %}
+{% set body = variant.html %}
+{% set outline = variant.outline %}
+
+<div class="post-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+  <article>
+
+    {{ renderCrumbs(crumbs, title, page.url, "site-breadcrumb--page") }}
+
+    <p class="back-link back-link--top">
+      <a href="{{ folder.backUrl | rel }}">← Back to {{ folder.backLabel }}</a>
+    </p>
+
+    <header class="entry-header">
+      <h1 class="entry-header__title">{{ variant.title }}</h1>
+
+      <dl class="entry-meta">
+        <div class="entry-meta__row">
+          <dt>Date</dt>
+          <dd><time datetime="{{ variant.date | isoDate }}">{{ variant.date | readableDate }}</time></dd>
+        </div>
+        <div class="entry-meta__row">
+          <dt>Author</dt><dd>{{ variant.author }}</dd>
+        </div>
+        <div class="entry-meta__row">
+          <dt>Version</dt><dd>{{ variant.version }}</dd>
+        </div>
+        <div class="entry-meta__row">
+          <dt>Category</dt>
+          <dd>
+            {% for category in variant.categories %}
+              {% set target = folder.facetLinks.category[category | toSlug] %}
+              {% if target %}<a href="{{ target | rel }}">{{ category }}</a>{% else %}{{ category }}{% endif %}{{ ", " if not loop.last }}
+            {% endfor %}
+          </dd>
+        </div>
+        {% if variant.tags.length %}
+        <div class="entry-meta__row entry-meta__row--tags">
+          <dt>Tags</dt>
+          <dd class="entry-meta__tags">
+            <input type="checkbox" id="entry-tags-toggle" class="entry-tags-toggle">
+            <label for="entry-tags-toggle" class="entry-tags-label">Tags <span class="entry-tags-count">{{ variant.tags.length }}</span></label>
+            <div class="entry-tags-cloud">
+              {% for tag in variant.tags %}
+                {% set target = folder.facetLinks.tag[tag | toSlug] %}
+                {% if target %}<a href="{{ target | rel }}" class="tag-pill">{{ tag }}</a>{% else %}<span class="tag-pill">{{ tag }}</span>{% endif %}
+              {% endfor %}
+            </div>
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+
+      {% if variant.siblings.length > 1 %}
+      <nav class="variant-tabs" aria-label="Versions of this entry">
+        <span class="variant-tabs__label">Versions</span>
+        <div class="variant-tabs__list">
+          {% for sibling in variant.siblings %}
+            <a href="{{ sibling.url | rel }}"
+               class="variant-tab{{ ' variant-tab--active' if sibling.slug == variant.slug }}"
+               {# | safe, or autoescaping renders the quotes as &quot; and the
+                  attribute never reaches the accessibility tree. #}
+               {{ 'aria-current="page"' | safe if sibling.slug == variant.slug }}>
+              <span class="variant-tab__author">{{ sibling.author }}</span>
+              <span class="variant-tab__version">v{{ sibling.version }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </nav>
+      {% endif %}
+    </header>
+
+    {% if outline %}
+    <input type="checkbox" id="article-outline-toggle" class="article-outline-toggle">
+    <label for="article-outline-toggle" class="article-outline-label" aria-label="Table of contents"></label>
+    <nav class="article-outline-panel" aria-label="Table of contents">
+      <p class="article-outline-heading">Contents</p>
+      {{ outline | safe }}
+    </nav>
+    {% endif %}
+
+    <div class="prose max-w-none">
+      {% if body %}{{ body | safe }}{% else %}
+        <p class="empty-state">This document has no content.</p>
+      {% endif %}
+    </div>
+
+    {% include "media.njk" %}
+
+    <footer class="entry-footer">
+      <a href="{{ folder.backUrl | rel }}" class="button-link">← {{ folder.backLabel | upper }}</a>
+    </footer>
+
+  </article>
+</div>

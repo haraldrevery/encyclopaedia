@@ -1,0 +1,21 @@
+{% macro renderPagination(item, pageUrl) %}
+{% if item.totalPages > 1 %}
+<nav class="page-nav" aria-label="Pagination">
+  <div class="page-nav__inner">
+    {% if item.prevUrl %}
+      <a class="page-nav__btn page-nav__btn--prev" href="{{ item.prevUrl | rel(pageUrl) }}">← Previous</a>
+    {% else %}
+      <span class="page-nav__btn page-nav__btn--disabled">← Previous</span>
+    {% endif %}
+
+    <span class="page-nav__info">Page {{ item.pageNumber }} of {{ item.totalPages }}</span>
+
+    {% if item.nextUrl %}
+      <a class="page-nav__btn page-nav__btn--next" href="{{ item.nextUrl | rel(pageUrl) }}">Next →</a>
+    {% else %}
+      <span class="page-nav__btn page-nav__btn--disabled">Next →</span>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}
+{% endmacro %}

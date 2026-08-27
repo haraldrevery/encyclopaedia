@@ -1,0 +1,1780 @@
+/*
+  input.css — compiled to main.css by the standalone Tailwind binary.
+
+  Two halves:
+    1. The base layer ported from website_v3_014 — backdrop, containers, nav,
+       motion. This is what makes the output look like the reference site.
+    2. The encyclopaedia components — cards, facets, breadcrumb, variant tabs,
+       health report. These don't exist on the reference site, so they are
+       written here in its idiom: uppercase mono labels, wide tracking,
+       neutral/zinc, no bold anywhere.
+
+  Article typography lives in input_prose.css → prose.css.
+*/
+
+@import "tailwindcss";
+@import "./theme.css";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+
+  /* The animated gradient behind everything. Fixed, so it doesn't scroll. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    width: 120%;
+    height: 120%;
+    z-index: -50;
+    background-image: linear-gradient(to bottom right,
+      var(--color-backdrop-light-edge),
+      var(--color-backdrop-light-center),
+      var(--color-backdrop-light-edge));
+    background-size: 200% 200%;
+    background-color: var(--color-backdrop-light-center);
+    animation: gradient-shift 15s ease infinite;
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  /* Dark mode is prefers-color-scheme only — no toggle, no .dark class. */
+  @media (prefers-color-scheme: dark) {
+    body::before {
+      background-image: linear-gradient(to bottom right,
+        var(--color-backdrop-dark-start),
+        var(--color-backdrop-dark-mid),
+        var(--color-backdrop-dark-end));
+    }
+    body { background-color: var(--color-backdrop-dark-start); }
+  }
+
+  html {
+    font-size: var(--text-body-mobile);
+    scroll-behavior: smooth;
+  }
+  @media (min-width: 900px) {
+    html { font-size: var(--text-body); }
+  }
+
+  /* --nav-height has to equal the bar's real height, and the bar is sized by
+     Tailwind utilities on nav.njk: h-18 (4.5rem) until the nav-desktop
+     breakpoint, h-13 (3.25rem) above it. theme.css can only declare the one
+     value — @theme takes no media queries — so the narrow case is corrected
+     here, in the base layer, which Tailwind orders after the theme layer.
+
+     Getting this wrong is invisible on most pages, because every
+     .page-container carries its own generous top padding that swallows the
+     24px difference. It is not invisible on the homepage, where the value is
+     load-bearing twice: .home-hero sizes itself to one screen minus the bar,
+     and .home-index offsets its anchor jump by it.
+
+     1140px is --breakpoint-nav-desktop from theme.css. Hardcoded because a
+     media query cannot read a custom property. */
+  :root { --nav-height: 4.5rem; }
+  @media (min-width: 1140px) { :root { --nav-height: 3.25rem; } }
+
+  body {
+    font-family: var(--font-brand);
+    font-size: var(--text-body-mobile);
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
+    padding-top: var(--nav-height);
+  }
+  @media (min-width: 900px) {
+    body { font-size: var(--text-body); }
+  }
+
+  /* The homepage hero runs full-bleed under a bar that is hidden at rest, so
+     reserving a band for it would leave an empty strip above the title. Every
+     other page keeps the padding above. */
+  body.is-home { padding-top: 0; }
+
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-mono);
+    line-height: 1.2;
+    letter-spacing: 0.026em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* Percentage widths, not max-widths — the reference site's signature. */
+  .page-container {
+    margin-left: auto;
+    margin-right: auto;
+    width: 88%;
+  }
+  @media (min-width: 900px) { .page-container { width: 75%; } }
+
+  /* The article column. Same two breakpoints as .page-container above and as
+     website_v3_014 — no extra cap on wide screens, because narrowing the
+     measure is what the reading-width button is for, and a hard-coded cap
+     would silently rescale every one of its steps.
+
+     Scalable via --reading-scale (default 1 = no change) so the corner button
+     injected by javascript/reading_width.js can narrow it. Kept as its own
+     class so that scaling can never reach the nav or a listing page. The `, 1`
+     fallback is what keeps the layout correct when JavaScript is disabled. */
+  .post-container {
+    margin-left: auto;
+    margin-right: auto;
+    width: calc(88% * var(--reading-scale, 1));
+  }
+  @media (min-width: 900px) { .post-container { width: calc(75% * var(--reading-scale, 1)); } }
+
+  /* The topographic texture behind page content. `isolation: isolate` keeps
+     the ::before from escaping its stacking context. */
+  .bg-topology-map {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 100vh;
+  }
+  .bg-topology-map::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 100%;
+    z-index: -8;
+    pointer-events: none;
+    background-image: url('./svg/mountain_topology_summer_2026.svg');
+    background-size: 100% auto;
+    background-position: top center;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    shape-rendering: optimizeSpeed;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 70%, transparent 95%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 70%, transparent 95%);
+  }
+  @media (prefers-color-scheme: dark) {
+    .bg-topology-map::before { opacity: 0.07; }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .main-nav { view-transition-name: main-nav; }
+
+  /* The one knob for nav vertical alignment — see --nav-text-offset in
+     theme.css. `position: relative` + `top` rather than a transform: the shift
+     is then exactly the token's value, and it leaves layout untouched. It goes
+     on the bar's children, never on the row itself, because a transform or an
+     inset on the row would make it the containing block for the fixed
+     .mobile-menu overlay and unpin it from the viewport. */
+  .nav-optical {
+    position: relative;
+    top: var(--nav-text-offset, 0);
+  }
+
+  /* Breadcrumb. One implementation, built from the folder tree — v13 had two
+     and hid one of them with !important. It renders in the page body, not in
+     the bar; the two modifiers below are the only places it appears. */
+  .site-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-nav);
+    color: var(--color-neutral-500);
+  }
+  @media (prefers-color-scheme: dark) {
+    .site-breadcrumb { color: var(--color-neutral-400); }
+  }
+
+  .site-breadcrumb__item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 12rem;
+  }
+  .site-breadcrumb__item a:hover {
+    color: var(--color-neutral-900);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .site-breadcrumb__item a:hover { color: var(--color-white); }
+  }
+
+  .site-breadcrumb__item--current {
+    color: var(--color-neutral-900);
+    flex-shrink: 1;
+  }
+  @media (prefers-color-scheme: dark) {
+    .site-breadcrumb__item--current { color: var(--color-white); }
+  }
+
+  .site-breadcrumb__sep { opacity: 0.4; }
+  .site-breadcrumb__sep:last-of-type { display: none; }
+
+  /* In the body the breadcrumb scrolls sideways rather than truncating or
+     wrapping — deep paths are exactly where it matters most, and a second line
+     would push the page down, which is the one thing it must not do. */
+  .site-breadcrumb--page,
+  .site-breadcrumb--kicker {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .site-breadcrumb--page::-webkit-scrollbar,
+  .site-breadcrumb--kicker::-webkit-scrollbar { display: none; }
+  .site-breadcrumb--page .site-breadcrumb__item,
+  .site-breadcrumb--kicker .site-breadcrumb__item { max-width: none; }
+
+  /* On a post: the line above "← Back to …". Its height plus this margin is
+     what .back-link--top gives back, so the title does not move down. */
+  .site-breadcrumb--page { margin-bottom: 0.4rem; }
+
+  /* On a folder or facet listing: the eyebrow above the page title. Matches
+     the type scale of .section-header__kicker, which it replaced — an <ol>
+     cannot live inside that <p>. */
+  .site-breadcrumb--kicker {
+    font-size: 0.875rem;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+  }
+  /* The eyebrow stays one flat colour, as it was before the segments became
+     links. Its trailing word is a type label — "Folder", "tag" — not the name
+     of the page, so giving it the current-page emphasis would be a lie. */
+  .site-breadcrumb--kicker,
+  .site-breadcrumb--kicker .site-breadcrumb__item--current { color: inherit; }
+
+  /* CSS-only mobile menu: a checkbox plus sibling selectors, no JavaScript. */
+  .menu-icon-text {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+  }
+  .menu-icon-text::before { content: "E"; }
+  #mobile-menu-toggle:checked ~ label .menu-icon-text::before { content: "X"; }
+  html:has(#mobile-menu-toggle:checked) { overflow: hidden; }
+
+  /* ── Search ───────────────────────────────────────────────────────────────
+     Written out as real properties rather than Tailwind utilities on purpose.
+     The results are built by javascript/search.js, and the `css` script in
+     package.json scans only pages/ and eleventy_settings/ — a class name that
+     appears nowhere but inside a .js file would be purged out of main.css.
+     Authored CSS is immune to that, and it is how .filter-pill is done too.
+
+     The box borrows the pill vocabulary further down this file: mono face,
+     0.4rem radius, and vertical padding that is deliberately asymmetric
+     because HaraldMono sits high in its box. */
+
+  /* Hidden until something proves scripts run. The .js class is set by an
+     inline one-liner in the <head> of base.njk, so this resolves before the
+     box is ever painted — there is no flash and no reflow of the nav.
+
+     Hiding by default rather than hiding from a <noscript> rule is what makes
+     it reliable: <noscript> only reacts to the browser having scripting
+     switched off, and misses DevTools' JavaScript toggle, several blocking
+     extensions, and a search.js that fails to load. None of those can leave a
+     search box on screen that does nothing when it is hidden to begin with. */
+  .nav-search { display: none; }
+
+  :root.js .nav-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  /* The box lives inside the .nav-optical link row, so it inherits that row's
+     downward nudge. Undo it here. --nav-text-offset compensates for where
+     HaraldMono's *glyphs* sit in their em-box; this box's two vertical rules
+     are geometry, not glyphs, and belong at the bar's true centre. The typed
+     text inside is unaffected — it stays optically placed by the input's own
+     asymmetric vertical padding a few lines down.
+
+     Relative offsets compose, so -X exactly cancels the parent's +X and the
+     box re-centres itself for free whenever the token is retuned. The fallback
+     needs its unit: calc(-1 * 0) is a unitless number, which `top` rejects.
+     The menu copy is excluded because its ancestor in the fullscreen overlay
+     never carried .nav-optical, so there is nothing there to undo. */
+  :root.js .nav-search:not(.nav-search--menu) {
+    top: calc(-1 * var(--nav-text-offset, 0rem));
+  }
+
+  .nav-search__input {
+    width: 11rem;
+    padding: 0.4rem 0.75rem 0.25rem;
+    /* No box — a vertical rule either side, nothing above or below. Written as
+       style + width + colour rather than the `border` shorthand so that the
+       focus and dark-mode rules further down can keep setting border-color on
+       its own. The vertical padding above is what gives the two rules their
+       height, and the horizontal padding is the gap between them and the text;
+       there is no radius, because a radius on side-only borders curls the ends
+       of the lines. */
+    border-style: solid;
+    border-width: 0 1px;
+    border-color: var(--color-neutral-300);
+    background: transparent;
+    color: var(--color-neutral-900);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    /* The desktop nav sets uppercase and wide tracking on its link row. Typed
+       text is neither of those things, so both are cancelled here. */
+    text-transform: none;
+    letter-spacing: normal;
+    transition: width 0.25s ease, border-color 0.2s;
+  }
+  .nav-search__input::placeholder {
+    color: var(--color-neutral-500);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    font-size: 0.75rem;
+  }
+  .nav-search__input:focus {
+    width: 16rem;
+    border-color: var(--color-neutral-900);
+    outline: none;   /* the width change and border are the focus indicator */
+  }
+  /* WebKit draws its own clear button and magnifier inside type=search. */
+  .nav-search__input::-webkit-search-decoration,
+  .nav-search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+  /* [hidden] has to be restated: the display below would otherwise win over
+     the attribute, and the panel would never close. */
+  .nav-search__panel[hidden] { display: none; }
+  .nav-search__panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    /* Above the nav (200), the mobile overlay (210) and the menu label (250). */
+    z-index: 260;
+    width: 26rem;
+    max-width: calc(100vw - 2rem);
+    max-height: 60vh;
+    overflow-y: auto;
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--card-radius);
+    background: var(--color-white);
+    box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 0.14);
+    text-align: left;
+  }
+
+  .nav-search__results { margin: 0; padding: 0; list-style: none; }
+
+  .nav-search__link {
+    display: block;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--color-neutral-100);
+    text-decoration: none;
+    color: inherit;
+  }
+  .nav-search__item:last-child .nav-search__link { border-bottom: none; }
+
+  .nav-search__item[aria-selected="true"] .nav-search__link,
+  .nav-search__link:hover {
+    background: var(--color-neutral-100);
+  }
+
+  .nav-search__title {
+    display: block;
+    font-family: var(--font-brand);
+    font-size: 1rem;
+    text-transform: none;
+    letter-spacing: var(--tracking-body);
+    color: var(--color-neutral-900);
+  }
+  .nav-search__context {
+    display: block;
+    margin-top: 0.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.55;
+  }
+  /* One line, clipped. A result is a signpost, not a summary — the entry is
+     one click away and says it properly. */
+  .nav-search__desc {
+    display: block;
+    margin-top: 0.25rem;
+    font-family: var(--font-brand);
+    font-size: 0.8rem;
+    text-transform: none;
+    letter-spacing: var(--tracking-body);
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-search__message,
+  .nav-search__more {
+    padding: 0.7rem 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.65;
+  }
+  .nav-search__more { border-top: 1px solid var(--color-neutral-200); }
+  .nav-search__more a { color: inherit; text-decoration: none; }
+  .nav-search__more a:hover { text-decoration: underline; }
+
+  /* Transparent background, so the highlight reads as emphasis inside the
+     title rather than as a second, competing UI element. */
+  .nav-search mark {
+    background: transparent;
+    color: var(--color-brand);
+    font-weight: 600;
+  }
+
+  /* ── Search: inside the mobile menu ──────────────────────────────────────
+     The overlay is a flex column that centres its children and clips nothing,
+     so the panel is laid out in the flow instead of floating over it — an
+     absolutely positioned dropdown here would sit outside the scrollable area
+     and be unreachable on a short screen. */
+  .nav-search--menu { flex-direction: column; width: min(22rem, 80vw); }
+  .nav-search--menu .nav-search__input { width: 100%; font-size: 1rem; }
+  .nav-search--menu .nav-search__input:focus { width: 100%; }
+  .nav-search--menu .nav-search__panel {
+    position: static;
+    width: 100%;
+    max-width: none;
+    max-height: 50vh;
+    margin-top: 0.75rem;
+    box-shadow: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .nav-search__input {
+      border-color: rgb(255 255 255 / 0.2);
+      color: var(--color-white);
+    }
+    .nav-search__input::placeholder { color: var(--color-neutral-400); }
+    .nav-search__input:focus { border-color: var(--color-white); }
+
+    .nav-search__panel {
+      border-color: rgb(255 255 255 / 0.12);
+      background: var(--color-neutral-950);
+      box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 0.6);
+    }
+    .nav-search__link { border-bottom-color: rgb(255 255 255 / 0.08); }
+    .nav-search__item[aria-selected="true"] .nav-search__link,
+    .nav-search__link:hover { background: var(--color-neutral-800); }
+    .nav-search__title { color: var(--color-white); }
+    .nav-search__more { border-top-color: rgb(255 255 255 / 0.12); }
+
+    /* --color-brand is a dark navy: invisible on near-black. The highlight
+       switches to a light tint that carries the same "this is the match"
+       meaning at the contrast this background needs. */
+    .nav-search mark { color: #89e47d; }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOTION
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@view-transition { navigation: auto; }
+
+.word_animation {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUpWord 0.8s ease-out forwards;
+  vertical-align: bottom;   /* stops lines jumping */
+  white-space: pre;         /* preserves spaces inside spans */
+}
+@keyframes fadeUpWord {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.extra_fade_effect {
+  animation: extra_fade_effect 1.2s ease-in forwards;
+  opacity: 0;
+}
+@keyframes extra_fade_effect {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Nav reveal: homepage only ─────────────────────────────────────────────
+   The class is applied by nav.njk when isHome. Scrubbed by scroll position
+   rather than by time: the bar is off-screen at the top of the document and
+   fully in place by 50vh, tracking the scroll in both directions.
+
+   Where animation-timeline is unsupported none of this applies and the bar is
+   simply always visible — which is why there is no JS fallback to ship. */
+@supports (animation-timeline: scroll()) {
+  .nav-reveal {
+    transform: translateY(-110%);
+    opacity: 0;
+    animation: navReveal linear both;
+    animation-timeline: scroll();
+    animation-range: 0 50vh;
+  }
+}
+@keyframes navReveal {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Fallback for browsers without scroll-driven animations — still Firefox at
+   the time of writing. javascript/nav_reveal.js scrubs the same transform and
+   opacity from a scroll listener; this rule only supplies the hidden starting
+   state, so the bar is never painted in place and then pulled away.
+
+   .nav-reveal-js is set on <html> by an inline one-liner in base.njk, and only
+   when the CSS path is genuinely dead — so exactly one of the two blocks is
+   ever live. No transition: the values are scrubbed per frame, and easing
+   between them would lag the scroll. */
+.nav-reveal-js .nav-reveal {
+  transform: translateY(-110%);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word_animation,
+  .extra_fade_effect,
+  .card {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  /* Kept out of the list above so the intent is legible: this one exists to
+     beat the @supports block, which would otherwise leave the bar parked
+     off-screen for a reader who has asked for no motion. */
+  .nav-reveal {
+    transform: none !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  body::before { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE HEADERS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Home: the hero and the video game menu ───────────────────────────────
+     Ported from v13, restyled in the reference site's idiom. Two stacked
+     blocks: a full-viewport entrance holding only the title and description,
+     then the sections below the fold as plain rows. Deliberately no cards and
+     no tag cloud — this page is a table of contents, and it should read as one
+     from across the room. */
+
+  .home-hero {
+    position: relative;          /* anchor for the scroll cue */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* Same 88%/75% column as .page-container, applied here rather than by
+       adding the class: the hero centres its own text and wants no other
+       page-container behaviour. */
+    width: 88%;
+    margin-inline: auto;
+    /* A full screenful, with nothing subtracted: the bar is hidden at the top
+       of this page and overlays the hero rather than sitting above it. */
+    min-height: 100vh;
+    /* svh, not vh: on mobile, vh is the URL-bar-retracted height, so the hero
+       would sit taller than the screen on load and the fold would land mid
+       word. svh is the smallest height, which is what "one screenful" means
+       here. Declared second so browsers without it keep the line above. */
+    min-height: 100svh;
+    padding: 4rem 0 6rem;        /* bottom room for the cue */
+  }
+  @media (min-width: 900px) { .home-hero { width: 75%; } }
+
+  /* Sits below the fold by construction, so it needs a little air above it
+     rather than the usual full page top padding. */
+  .home-index {
+    padding: 2rem 0 5rem;
+    /* The nav is position: fixed, so the jump from the cue would align this
+       block with the top of the scrollport and leave the first row hidden
+       underneath the bar. Same fix as .prose headings and .health-section.
+       Only has to clear the bar itself — the 2rem above supplies the air. */
+    scroll-margin-top: var(--nav-height);
+  }
+
+  /* The cue must not arrive before the words it belongs to: 2.1s clears the
+     longest scatter delay (1.3s) plus the 0.8s fade. Reuses fadeUpWord rather
+     than declaring a second identical keyframe. */
+  .home-hero__cue {
+    position: absolute;
+    bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0;
+    animation: fadeUpWord 0.8s ease-out 2.1s forwards;
+    transition: opacity 200ms ease;
+  }
+  /* fadeUpWord ends at opacity 1 and the fill is forwards, so the resting
+     state has to be dimmed from inside the element instead. */
+  .home-hero__cue-label { opacity: 0.4; transition: opacity 200ms ease; }
+  .home-hero__cue:hover .home-hero__cue-label { opacity: 0.75; }
+
+  .home-hero__cue-arrow {
+    display: block;
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.4;
+    animation: cueBob 2.4s ease-in-out infinite;
+  }
+  @keyframes cueBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(4px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero__cue      { opacity: 1 !important; animation: none !important; }
+    .home-hero__cue-arrow { transform: none !important; animation: none !important; }
+  }
+
+  .home-title {
+    font-family: var(--font-mono);
+    font-size: clamp(2rem, 7vw, 5.5rem);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-brand);
+    line-height: 1;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 900px) {
+    .home-title { font-size: clamp(2.5rem, 7vw, 5.5rem); }
+  }
+
+  .home-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+    /* Nothing follows it inside the hero — the cue is absolutely positioned
+       and the section menu is a separate block. */
+    margin-bottom: 0;
+    /* Wide tracking eats horizontal room fast; a ch-based cap set for normal
+       tracking would break this into three ragged lines. */
+    max-width: 70ch;
+  }
+
+  .game-menu { list-style: none; width: 100%; text-align: left; }
+
+  .game-menu__item { border-top: 1px solid rgb(0 0 0 / 0.12); }
+  .game-menu__item:last-child { border-bottom: 1px solid rgb(0 0 0 / 0.12); }
+  @media (prefers-color-scheme: dark) {
+    .game-menu__item { border-top-color: rgb(255 255 255 / 0.14); }
+    .game-menu__item:last-child { border-bottom-color: rgb(255 255 255 / 0.14); }
+  }
+
+  .game-menu__link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1rem 0;
+    position: relative;
+    font-size: clamp(1.4rem, 3.5vw, 2.5rem);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: var(--text-line-row-space);
+    transition: padding-left 220ms ease, opacity 120ms ease;
+  }
+  /* The chevron lives outside the row and slides in, so nothing reflows. */
+  .game-menu__link::before {
+    content: "›";
+    position: absolute;
+    left: -1.5rem;
+    opacity: 0;
+    font-size: 1.2em;
+    transition: opacity 120ms ease, left 220ms ease;
+  }
+  .game-menu__link:hover { padding-left: 0.5rem; }
+  .game-menu__link:hover::before { opacity: 1; left: -1rem; }
+
+  .game-menu__count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.45;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: opacity 120ms ease;
+  }
+  .game-menu__link:hover .game-menu__count { opacity: 0.8; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .game-menu__link { transition: none; }
+    .game-menu__link:hover { padding-left: 0; }
+  }
+
+  .section-header__kicker {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+  }
+
+
+  .section-header__meta {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.55;
+  }
+
+
+  .section-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgb(0 0 0 / 0.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    .section-header { border-bottom-color: rgb(255 255 255 / 0.12); }
+  }
+
+  /* text-5xl -> text-6xl @900px, tracking-wider: the same scale
+     website_v3_014 gives its page titles. See the mapping note in
+     input_prose.css for how the literals here relate to its classes. */
+  .section-header__title {
+    font-size: 3rem;
+    line-height: var(--text-line-row-space);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+  @media (min-width: 900px) { .section-header__title { font-size: 3.75rem; } }
+
+  .index-sep { opacity: 0.4; }
+
+  /* ── About ──────────────────────────────────────────────────────────────
+     The one page with a portrait. Two columns from 900px — the same single
+     breakpoint every other layout here uses — and stacked below it, so the
+     photo leads and the bio follows rather than the two fighting for width. */
+  .about-profile {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+    margin-top: 2.5rem;
+  }
+  @media (min-width: 900px) {
+    .about-profile {
+      grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+      gap: 4rem;
+    }
+  }
+
+  .about-photo-wrap { width: min(18rem, 100%); }
+  /* The portrait opens in the lightbox, so it gets the same "this image opens"
+     hover the media grid uses. Clipping lives here rather than on the image so
+     the scale stays inside the rounded corner. */
+  .about-photo-link {
+    display: block;
+    border-radius: 0.4rem;
+    overflow: hidden;
+  }
+  .about-photo-link:hover .about-photo { transform: scale(1.04); }
+  .about-photo {
+    transition: transform 0.5s ease;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    background: var(--color-neutral-200);
+    border-radius: 0.4rem;            /* the same radius as .tag-pill */
+  }
+
+  .about-name {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .about-role {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.45;
+    margin-top: 0.5rem;
+  }
+  /* Held to a readable measure: it sits in a column that can be much wider. */
+  .about-intro { margin-top: 1.25rem; max-width: 46ch; }
+
+  .about-body { margin-top: 3rem; }
+
+  /* The site's only button style, borrowed from the reference site: an
+     underlined link, never a filled rectangle. */
+  .button-link {
+    display: inline-block;
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 0.25rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    font-size: 0.95rem;
+    transition: opacity 0.3s;
+  }
+  .button-link:hover { opacity: 0.5; }
+
+  .back-link {
+    margin-top: 3rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.6;
+  }
+  /* 2rem before the breadcrumb moved in above it: the crumb line and its own
+     margin take up the difference, so the title lands where it always did. */
+  .back-link--top { margin-top: 0; margin-bottom: 0.5rem; }
+  .back-link a:hover { opacity: 0.6; text-decoration: underline; text-underline-offset: 4px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FACET FILTERS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .filter-bar { margin-bottom: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+
+  .filter-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+    margin-right: 0.5rem;
+    cursor: pointer;
+  }
+
+  /* Asymmetric vertical padding is deliberate — HaraldMono sits high in its
+     box, so equal padding looks bottom-heavy. */
+  .filter-pill,
+  .tag-pill {
+    display: inline-block;
+    padding: 0.4rem 0.85rem 0.25rem;
+    border-radius: 0.4rem;
+    background: var(--color-neutral-200);
+    color: var(--color-neutral-900);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;              /* text-xs */
+    text-transform: uppercase;
+    letter-spacing: 0.1em;           /* tracking-widest — the reference's tag pills */
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .filter-pill:hover, .tag-pill:hover { background: var(--color-neutral-300); }
+
+  .filter-pill--active, .tag-pill--active {
+    background: var(--color-neutral-900);
+    color: var(--color-white);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .filter-pill, .tag-pill { background: var(--color-neutral-800); color: var(--color-white); }
+    .filter-pill:hover, .tag-pill:hover { background: var(--color-neutral-700); }
+    .filter-pill--active, .tag-pill--active { background: var(--color-white); color: var(--color-neutral-900); }
+  }
+
+  .tag-filter summary { list-style: none; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .tag-filter summary::-webkit-details-marker { display: none; }
+  .tag-filter summary::after { content: "▾"; opacity: 0.5; }
+  .tag-filter[open] summary::after { content: "▴"; }
+  .tag-filter__count { opacity: 0.6; }
+
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.85rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CARD GRID
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+    gap: var(--card-gap);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    animation: cardReveal 0.6s ease-out forwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+
+  .card__link { display: block; }
+
+  .card__thumb {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    background: var(--color-neutral-200);
+    margin-bottom: 1rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card__thumb { background: var(--color-neutral-800); }
+  }
+
+  .card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .card:hover .card__thumb img { transform: scale(1.05); }
+
+  .card__thumb-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    opacity: 0.2;
+  }
+
+  .card__badge {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 0.3rem 0.6rem 0.15rem;
+    border-radius: 0.3rem;
+    background: rgb(0 0 0 / 0.72);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+  }
+
+  .card__categories { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .card__category {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;               /* text-xs */
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+  }
+
+  /* text-xl + tracking-wide — the reference's card heading. */
+  .card__title {
+    font-size: 1.25rem;
+    line-height: var(--text-line-row-space);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.5rem;
+    transition: opacity 0.2s;
+  }
+  .card:hover .card__title { opacity: 0.6; }
+
+  .card__desc {
+    font-size: 1rem;
+    line-height: 1.5;
+    opacity: 0.7;
+    margin-bottom: 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card__footer {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.5;
+  }
+  .card__author::before { content: "· "; }
+
+  .card__tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+  .card__tag {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;              /* text-xs */
+    text-transform: uppercase;
+    letter-spacing: 0.1em;           /* tracking-widest — as the reference tags them */
+    opacity: 0.45;
+  }
+  .card__tag::before { content: "#"; opacity: 0.6; }
+
+  .empty-state {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.45;
+    padding: 2rem 0;
+  }
+  .empty-state--large { text-align: center; padding: 5rem 0; line-height: 2.2; }
+  .empty-state code { text-transform: none; letter-spacing: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGINATION
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .page-nav { margin-top: 3.5rem; }
+  .page-nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .page-nav__btn {
+    padding: 0.6rem 1.2rem 0.4rem;
+    border-radius: 0.4rem;
+    background: var(--color-neutral-200);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    transition: background-color 0.2s;
+  }
+  .page-nav__btn:not(.page-nav__btn--disabled):hover { background: var(--color-neutral-300); }
+  .page-nav__btn--disabled { opacity: 0.35; cursor: not-allowed; }
+  .page-nav__info {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.55;
+  }
+  @media (prefers-color-scheme: dark) {
+    .page-nav__btn { background: var(--color-neutral-800); }
+    .page-nav__btn:not(.page-nav__btn--disabled):hover { background: var(--color-neutral-700); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ENTRY PAGE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .entry-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgb(0 0 0 / 0.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    .entry-header { border-bottom-color: rgb(255 255 255 / 0.12); }
+  }
+
+  .entry-header__title {
+    font-size: 3rem;                  /* text-5xl */
+    line-height: var(--text-line-row-space);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;           /* tracking-wider */
+    margin-bottom: 1.75rem;
+  }
+  @media (min-width: 900px) { .entry-header__title { font-size: 3.75rem; } }
+
+  /* Every field is always shown, including the ones that read "Unknown" —
+     hiding them would make a guessed value indistinguishable from a real one. */
+  .entry-meta {
+    display: grid;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+  }
+  .entry-meta__row {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+  .entry-meta dt { opacity: 0.4; }
+  .entry-meta dd { opacity: 0.8; }
+  .entry-meta a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Tags are the one meta row that can't fit beside a 6rem label on a phone, so
+     there it drops the label column, spans the container, and collapses behind a
+     toggle. Same hidden-checkbox disclosure as the outline panel and mobile menu. */
+  .entry-meta__row--tags { grid-template-columns: 1fr; gap: 0; }
+  .entry-meta__row--tags > dt { display: none; }
+  .entry-meta__tags { display: block; }
+
+  .entry-tags-toggle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;                      /* not display:none — keeps it focusable */
+  }
+  .entry-tags-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    opacity: 0.4;                    /* matches .entry-meta dt */
+  }
+  .entry-tags-label::after { content: "▾"; opacity: 0.5; }
+  .entry-tags-toggle:checked ~ .entry-tags-label::after { content: "▴"; }
+  .entry-tags-toggle:focus-visible ~ .entry-tags-label {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  .entry-tags-count { opacity: 0.6; }
+
+  .entry-tags-cloud { display: none; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+  .entry-tags-toggle:checked ~ .entry-tags-cloud { display: flex; }
+
+  @media (min-width: 900px) {
+    .entry-meta__row--tags { grid-template-columns: 6rem 1fr; gap: 0.75rem; }
+    .entry-meta__row--tags > dt { display: block; }
+    /* Both gone from the tab order too — the cloud is unconditionally open here,
+       so a focusable toggle would be a stop that does nothing. */
+    .entry-tags-toggle,
+    .entry-tags-label { display: none; }
+    .entry-tags-cloud { display: flex; margin-top: 0; }
+  }
+
+  .variant-tabs { margin-top: 2rem; }
+  .variant-tabs__label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.45;
+    margin-bottom: 0.75rem;
+  }
+  .variant-tabs__list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .variant-tab {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem 0.3rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgb(0 0 0 / 0.12);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .variant-tab:hover { background: var(--color-neutral-200); }
+  .variant-tab--active {
+    background: var(--color-neutral-900);
+    border-color: var(--color-neutral-900);
+    color: var(--color-white);
+  }
+  .variant-tab__version { opacity: 0.55; }
+  @media (prefers-color-scheme: dark) {
+    .variant-tab { border-color: rgb(255 255 255 / 0.15); }
+    .variant-tab:hover { background: var(--color-neutral-800); }
+    .variant-tab--active {
+      background: var(--color-white);
+      border-color: var(--color-white);
+      color: var(--color-neutral-900);
+    }
+  }
+
+  .entry-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgb(0 0 0 / 0.1);
+  }
+  @media (prefers-color-scheme: dark) {
+    .entry-footer { border-top-color: rgb(255 255 255 / 0.12); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MEDIA
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .media-section { margin-top: 3.5rem; }
+  .media-section__title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.45;
+    margin-bottom: 1.25rem;
+  }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 1rem;
+  }
+  .image-grid__item {
+    display: block;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    background: var(--color-neutral-200);
+  }
+  .image-grid__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease, filter 0.5s ease;
+  }
+  .image-grid__item:hover img { transform: scale(1.06); }
+  @media (prefers-color-scheme: dark) {
+    .image-grid__item { background: var(--color-neutral-800); }
+  }
+
+  .media-stack { display: flex; flex-direction: column; gap: 1.75rem; }
+  .media-embed { width: 100%; max-width: 100%; border-radius: var(--card-radius); display: block; }
+  .media-figure figcaption {
+    margin-top: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.45;
+  }
+
+  .download-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  /* A COLUMN now, not a row: the name/size line moved into __head so a file can
+     carry its checksums underneath without fighting space-between for position.
+     Padding, border, font and size are unchanged, so a file whose checksums
+     could not be computed renders exactly as this list did before. */
+  .download-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .download-item__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    min-width: 0;
+  }
+  .download-item a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .download-item__size { opacity: 0.45; white-space: nowrap; }
+
+  /* Checksums. A grid rather than a flex row so both labels share one column
+     and the hex starts at the same x whether the label reads SHA-256 or
+     SHA-512. */
+  .checksum-list {
+    display: grid;
+    /* minmax(0, 1fr) is load-bearing, not decoration. A bare `1fr` means
+       minmax(auto, 1fr), and `auto` floors the track at its min-content width —
+       which for an unbreakable 128-character run of hex is about 850px. That
+       one omission is what turns an entry page into a horizontally scrolling
+       page on a phone. */
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.15rem;
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+  }
+  .checksum-list__label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.45;
+    white-space: nowrap;
+  }
+  .checksum-list__value {
+    margin: 0;
+    min-width: 0;
+    /* `anywhere`, not `break-word`: only `anywhere` also lets the grid track's
+       min-content contribution collapse, which is what actually stops the
+       digest forcing the page wide. Deliberately NOT overflow-x: auto — a
+       horizontal scroller nested inside a vertical page is worse on touch than
+       a wrapped digest. */
+    overflow-wrap: anywhere;
+    /* One click, or one long-press on a phone, selects the whole digest.
+       Without it a double-click stops at the first run of characters. */
+    user-select: all;
+    opacity: 0.7;
+  }
+
+  /* Below ~640px there is no useful run of hex left beside a label, so the
+     label goes above its value and the digest gets the full width. */
+  @media (max-width: 40rem) {
+    .checksum-list { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+    .checksum-list__label { margin-top: 0.35rem; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .download-item { border-bottom-color: rgb(255 255 255 / 0.1); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHTBOX
+   ══════════════════════════════════════════════════════════════════════════
+
+   GLightbox ships a skin of its own — every caption is a white bar set in
+   Arial — and every image on an entry page carries a data-title, so it is on
+   screen the moment you open one. Ported from website_v3_014/input.css, which
+   solves it the same way.
+
+   Deliberately NOT inside @layer components. Layered CSS loses to unlayered
+   CSS whatever its specificity, and glightbox.min.css is unlayered, so an
+   override in the components layer would never take effect. The !important
+   flags are for the same fight: base.njk loads glightbox.min.css after
+   main.css, and the skin styles its caption through `.glightbox-clean
+   .gslide-title` (0,2,0), which outranks anything reachable from here without
+   them. This is the only place in this file that needs them, and every
+   declaration in the block carries one — a rule that silently loses the
+   cascade is worse than no rule at all.
+
+   There is no prefers-color-scheme branch on purpose: .goverlay is #000 in
+   both schemes, so a lightbox caption is always light-on-dark.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.gslide-description,
+.gdesc-inner,
+.gdesc-inner p,
+.gdesc-inner * {
+  background: transparent !important;
+  font-family: var(--font-brand), system-ui, sans-serif !important;
+  color: #ececec !important;
+  line-height: var(--leading-body) !important;
+  letter-spacing: var(--tracking-body) !important;
+}
+
+/* A blurred panel under the caption, so a filename stays readable over a
+   bright photograph. Wins the background back off the rule above on
+   specificity, which is why that one can stay blanket-transparent.
+
+   The reference writes this as `.gdesc-bottom .gdesc-inner`; GLightbox emits
+   `description-bottom` and never `gdesc-bottom`, so that selector is dead
+   there. Matching the class the library actually sets means it renders — and
+   sidesteps the reference's light-mode rule, which would have put #ececec text
+   on an rgba(248,250,252,.92) panel. */
+.gslide-description.description-bottom .gdesc-inner {
+  background: rgb(15 15 15 / 0.65) !important;
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1rem 1rem 0 0;
+  padding: 1.1rem 1.6rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FULL INDEX
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  .index-hint {
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.4;
+  }
+
+  .index-section { margin-bottom: 3rem; }
+  .index-section__title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
+  }
+  .index-section__title a:hover { opacity: 0.6; }
+  @media (prefers-color-scheme: dark) {
+    .index-section__title { border-bottom-color: rgb(255 255 255 / 0.1); }
+  }
+
+  .index-list { display: flex; flex-direction: column; }
+  .index-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 1rem;
+    padding: 0.5rem 0;
+  }
+  .index-row__title {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.95rem;
+  }
+  .index-row__title:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .index-row__meta,
+  .index-row__tags {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.45;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HEALTH REPORT
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* The three severity colours — the only palette on the site beyond the
+     backdrop, and deliberately muted so they read as tinted text rather than
+     as alert badges pasted onto the design. They live here rather than in
+     theme.css because @theme tokens can't vary per prefers-color-scheme, and
+     these have to: the light values are chosen against #ffffff–#dedede, the
+     dark ones against #000000–#262626.
+
+     Level names, not colour names: lib/library.js ranks a finding low/medium/
+     high and never knows which colour that turns into.
+
+     Each triplet climbs in contrast as well as in hue, so the ranking still
+     reads when hue doesn't — and every value clears 4.5:1 against the *worst*
+     end of its gradient, not just the middle. Ratios in the comments are
+     against #dedede (light) and #262626 (dark). */
+  .health-summary,
+  .health-section,
+  .section-header__meta {
+    --health-low:    #755c15;   /* 4.7:1 */
+    --health-medium: #8a3f13;   /* 5.6:1 */
+    --health-high:   #911e1b;   /* 6.5:1 */
+    /* Outside the ranking: the one tile that reports success rather than a
+       finding. Same muted treatment, same contrast floor. */
+    --health-ok:     #12653b;   /* 5.3:1 */
+  }
+  @media (prefers-color-scheme: dark) {
+    .health-summary,
+    .health-section,
+    .section-header__meta {
+      --health-low:    #fff34a; /* 5.4:1 */
+      --health-medium: #ff8c33; /* 6.0:1 */
+      --health-high:   #ff392b; /* 7.4:1 */
+      --health-ok:     #3fbf6f; /* 6.4:1 */
+    }
+  }
+
+  .health-sev--low    { color: var(--health-low); }
+  .health-sev--medium { color: var(--health-medium); }
+  .health-sev--high   { color: var(--health-high); }
+
+  /* ●/●●/●●● beside every coloured thing, so the ranking survives greyscale
+     printing, forced-colours mode and colour-blindness. Never dimmed — it is
+     carrying the signal when the colour can't.
+
+     Sized absolutely, not in em: it sits inside 0.75rem chips and 1.4rem
+     headings alike, and a relative size would vanish in the former. */
+  .health-mark {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    margin-right: 0.45rem;
+    opacity: 1;
+    vertical-align: 0.08em;
+    white-space: nowrap;
+  }
+  .health-section__title .health-mark { font-size: 0.9rem; }
+
+  .health-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .health-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1.1rem 1.1rem 0.9rem;
+    border-radius: var(--card-radius);
+    border: 1px solid rgb(0 0 0 / 0.1);
+    transition: border-color 0.2s;
+  }
+  .health-tile:hover { border-color: rgb(0 0 0 / 0.3); }
+  .health-tile--zero { opacity: 0.4; }
+
+  /* Tint the count and one edge, not the whole card: eight fully coloured
+     tiles would compete with each other instead of ranking themselves. */
+  .health-tile--low,
+  .health-tile--medium,
+  .health-tile--high,
+  .health-tile--ok { border-left-width: 2px; }
+
+  .health-tile--low    { border-left-color: var(--health-low); }
+  .health-tile--medium { border-left-color: var(--health-medium); }
+  .health-tile--high   { border-left-color: var(--health-high); }
+  .health-tile--ok     { border-left-color: var(--health-ok); }
+
+  .health-tile--low    .health-tile__count,
+  .health-tile--low    .health-mark { color: var(--health-low); }
+  .health-tile--medium .health-tile__count,
+  .health-tile--medium .health-mark { color: var(--health-medium); }
+  .health-tile--high   .health-tile__count,
+  .health-tile--high   .health-mark { color: var(--health-high); }
+  .health-tile--ok     .health-tile__count,
+  .health-tile--ok     .health-mark { color: var(--health-ok); }
+
+  /* The left edge is the rank; hover must not paint over it. */
+  .health-tile--low:hover    { border-left-color: var(--health-low); }
+  .health-tile--medium:hover { border-left-color: var(--health-medium); }
+  .health-tile--high:hover   { border-left-color: var(--health-high); }
+  .health-tile--ok:hover     { border-left-color: var(--health-ok); }
+
+  .health-tile__count {
+    font-family: var(--font-mono);
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+  .health-tile__label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+  }
+  .health-tile__note { font-size: 0.75rem; opacity: 0.5; line-height: 1.35; }
+
+  @media (prefers-color-scheme: dark) {
+    .health-tile { border-color: rgb(255 255 255 / 0.12); }
+    .health-tile:hover { border-color: rgb(255 255 255 / 0.3); }
+  }
+
+  .health-section { margin-bottom: 3.5rem; scroll-margin-top: 6rem; }
+  .health-section__title {
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+  }
+  /* The mark inherits the heading colour here, so no per-level rule is needed. */
+  .health-section__title--low    { color: var(--health-low); }
+  .health-section__title--medium { color: var(--health-medium); }
+  .health-section__title--high   { color: var(--health-high); }
+
+  .health-section__lede { font-size: 0.85rem; opacity: 0.6; margin-bottom: 1.25rem; max-width: 55ch; }
+
+  .health-ok {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.45;
+  }
+  .health-ok::before { content: "✓ "; }
+
+  .health-tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin-bottom: 1.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.7;
+  }
+  .health-tally__count { opacity: 0.5; }
+
+  .health-tally__row--low    { color: var(--health-low); }
+  .health-tally__row--medium { color: var(--health-medium); }
+  .health-tally__row--high   { color: var(--health-high); }
+
+  .health-list { display: flex; flex-direction: column; gap: 1rem; }
+  .health-list--compact { gap: 0.25rem; }
+
+  .health-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgb(0 0 0 / 0.07);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 1rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    .health-item { border-bottom-color: rgb(255 255 255 / 0.09); }
+  }
+
+  /* A coloured edge rather than coloured text: the mono paths in these rows
+     have to stay legible, and three tints across a few hundred lines would be
+     noise rather than signal. */
+  .health-item--low,
+  .health-item--medium,
+  .health-item--high {
+    border-left: 2px solid;
+    padding-left: 0.65rem;
+  }
+  .health-item--low    { border-left-color: var(--health-low); }
+  .health-item--medium { border-left-color: var(--health-medium); }
+  .health-item--high   { border-left-color: var(--health-high); }
+
+  .health-item__path,
+  .health-item__tex {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    word-break: break-all;
+  }
+  /* A linked finding. Deliberately not a default anchor: the report is
+     monochrome and thirty blue underlined rows would read as decoration rather
+     than as data. The link is discoverable on hover and on keyboard focus, and
+     inherits its colour from the row's severity like the unlinked text does. */
+  a.health-item__path--link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  a.health-item__path--link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    opacity: 0.75;
+  }
+  a.health-item__path--link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+    text-decoration: underline;
+  }
+
+  .health-item__tex { opacity: 0.6; }
+  .health-item__title { text-transform: uppercase; letter-spacing: 0.05em; }
+  .health-item__note { font-size: 0.875rem; opacity: 0.55; }
+  .health-item__size {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    opacity: 0.5;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  /* Was a bare opacity bump. Now it agrees with the rank of the section it
+     appears in rather than shouting independently of it. */
+  .health-item__size--over { opacity: 1; color: var(--health-medium); }
+
+  .health-item__detail {
+    flex-basis: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.875rem;
+    opacity: 0.6;
+    padding-left: 1rem;
+  }
+
+  /* opacity on the container would drag the ranked field chips down with the
+     message text, and a child can't undo an ancestor's opacity. Fade the text
+     colour instead, which a child's own colour overrides cleanly. The opacity
+     above stays as the floor for anything without color-mix(). */
+  @supports (color: color-mix(in srgb, currentColor 60%, transparent)) {
+    .health-item__detail {
+      opacity: 1;
+      color: color-mix(in srgb, currentColor 60%, transparent);
+    }
+    .health-tally {
+      opacity: 1;
+      color: color-mix(in srgb, currentColor 70%, transparent);
+    }
+  }
+  .health-field {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;          /* tracking-wider */
+    opacity: 0.7;
+    margin-right: 0.4rem;
+  }
+
+  /* Full strength once ranked — the colour is doing the work the dimming
+     used to, and a 0.7 red is a weak signal. */
+  .health-field--low,
+  .health-field--medium,
+  .health-field--high { opacity: 1; }
+
+  .health-field--low    { color: var(--health-low); }
+  .health-field--medium { color: var(--health-medium); }
+  .health-field--high   { color: var(--health-high); }
+
+  .health-footnote {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgb(0 0 0 / 0.08);
+    font-size: 0.875rem;
+    opacity: 0.5;
+    max-width: 60ch;
+  }
+  .health-footnote code { font-family: var(--font-mono); }
+  @media (prefers-color-scheme: dark) {
+    .health-footnote { border-top-color: rgb(255 255 255 / 0.1); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LEGACY FALLBACKS
+   Every progressive enhancement above needs a floor, or an older browser
+   renders a blank or broken page rather than a plain one.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@supports not (aspect-ratio: 1) {
+  .card__thumb { height: 11rem; }
+  .image-grid__item { height: 11rem; }
+}
+
+@supports not (selector(:has(*))) {
+  /* Without :has() the body can still scroll behind the open mobile menu.
+     Harmless, and the menu itself still works. */
+  html { overflow: visible; }
+}
+
+@layer utilities {
+  @supports (height: 100dvh) {
+    .bg-topology-map { min-height: 100dvh; }
+  }
+}

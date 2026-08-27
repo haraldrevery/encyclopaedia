@@ -1,0 +1,95 @@
+/*
+  theme.css — every design token, in one place.
+
+  Ported from website_v3_014/theme.css, which is where this aesthetic comes
+  from. Tailwind v4 turns each token here into a utility, so --tracking-nav
+  becomes "tracking-nav" and --breakpoint-nav-desktop becomes the
+  "nav-desktop:" variant. Tuning the look means editing this file, not the
+  markup.
+
+  There is deliberately no colour palette beyond the page backdrop: the design
+  is Tailwind's neutral/zinc plus one accent, and the character comes from the
+  type — a single-weight custom face, uppercase, widely tracked, never bold.
+*/
+
+@theme {
+  /* Font families */
+  --font-brand: "HaraldText", sans-serif;
+  --font-mono: "HaraldMono", monospace;
+
+  /* Type scale */
+  --text-body: 1.25rem;         /* global font size, desktop */
+  --text-body-mobile: 1.22rem;  /* global font size, phones */
+  --text-mono: 1.24rem;
+  --text-nav: 1.4rem;
+
+  --katex-font-size: 0.88rem;     /* MathML runs large against HaraldText */
+  --text-line-row-space: 1.24;  /* tight line-height — headings, display text */
+  --leading-body: 1.5;          /* body copy */
+  --tracking-body: 0.0em;       /* global letter-spacing (space between characters) */
+
+  /* Letter-spacing for nav and small uppercase labels. Each becomes a
+     utility class, so spacing is tunable here rather than in every template. */
+  --tracking-brand: 0.2em;        /* wordmark, below md */
+  --tracking-brand-wide: 0.275em; /* wordmark, md and up */
+  --tracking-nav: 0.15em;         /* desktop nav links */
+  --tracking-nav-menu: 0.27em;    /* mobile fullscreen menu */
+  --tracking-eyebrow: 0.3em;      /* small uppercase kicker labels */
+
+  /* Colours */
+  --color-brand: #1aa310;         /* accent / focus outline */
+
+  /* Page backdrop — the animated body::before gradient, light and dark */
+  --color-backdrop-light-edge:   #dedede;
+  --color-backdrop-light-center: #ffffff;
+  --color-backdrop-dark-start:   #000000;
+  --color-backdrop-dark-mid:     #141414;
+  --color-backdrop-dark-end:     #262626;
+
+  /* Breakpoints and animation */
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-nav-desktop: 1140px;
+  --animate-gradient-slow: gradient-shift 15s ease infinite;
+
+  @keyframes gradient-shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── Encyclopaedia-specific ──────────────────────────────────────────────
+     The reference site has no card grid, no facet pills and no breadcrumb, so
+     these are the only tokens added on top of it. */
+  --card-gap: 1.75rem;
+  --card-min: 15rem;      /* grid auto-fill floor */
+  --card-radius: 0.5rem;
+  --nav-height: 3.25rem;
+
+  /* Optical centring for the nav bar. HaraldMono's glyphs sit high in their
+     em-box, so the bar's `items-center` centres the box but not the ink, and
+     the text reads as too high. This shifts everything in the bar as a unit —
+     positive pushes the text down, negative up. Tune by eye; 0 is plain
+     geometric centring. Replaces website_v3_014's hand-placed per-element
+     translate-y-[14%] / [10%] / [6%]. */
+  --nav-text-offset: 0.14rem;
+}
+
+/* Fonts. Single weight — the design never uses bold; emphasis is an underline. */
+@font-face {
+  font-family: 'HaraldText';
+  src: url('./fonts/HaraldReveryTextFont.woff2') format('woff2'),
+       url('./fonts/HaraldReveryTextFont.woff') format('woff'),
+       url('./fonts/HaraldReveryTextFont.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HaraldMono';
+  src: url('./fonts/HaraldReveryMonoFont.woff2') format('woff2'),
+       url('./fonts/HaraldReveryMonoFont.woff') format('woff'),
+       url('./fonts/HaraldReveryMonoFont.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}

@@ -1,0 +1,20 @@
+node_modules/
+
+# Build output. The generated site is rebuilt from content/input_markdown/,
+# so only your markdown and media are worth tracking.
+content/index.html
+content/about.html
+content/legal.html
+content/page/
+content/assets/
+
+# Standalone binaries — ~95 MB each, close to GitHub's file size limit.
+# Rebuild with eleventy_binary/compile.sh.
+encyclopedia-linux-x64
+encyclopedia-win-x64.exe
+tailwindcss-linux-x64
+tw.exe
+
+# Test results, written by `npm test` and read back by the status page.
+# Generated, and stale the moment lib/ changes — so it is not tracked.
+test/results.json

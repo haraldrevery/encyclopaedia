@@ -1,0 +1,129 @@
+{#
+  base.njk — the shell every page renders into.
+
+  Every URL below goes through the `rel` filter, which resolves it relative to
+  the page being written. That is the whole reason the output works from a
+  file:// path, a USB stick or a web server without a rebuild.
+#}<!doctype html>
+<html lang="{{ site.lang }}" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {# The condition is what keeps the homepage from reading "Encyclopaedia — Encyclopaedia". #}
+  <title>{% if title and title != site.name %}{{ title }} — {% endif %}{{ site.name }}</title>
+  <meta name="description" content="{{ (description | default(site.description)) }}">
+  <meta name="theme-color" content="{{ site.themeColor }}">
+  <meta name="apple-mobile-web-app-title" content="{{ site.shortName }}">
+
+  {# Marks the document as scripted, which is what reveals the nav search box —
+     it is hidden in the stylesheet and nothing but this line brings it back.
+
+     Inverted deliberately. The obvious way round is a <noscript> rule that
+     hides the box, but <noscript> only fires when the BROWSER has scripting
+     off: DevTools' "disable JavaScript" and several blocking extensions leave
+     the box on screen, and a search.js that 404s leaves it there too. Hidden
+     by default, there is no way to end up with a search box that does nothing.
+
+     In <head> and inline, so the class is set before the body is parsed and
+     the box never flashes in and out — the same reason the reading-width
+     one-liner further down is here rather than in a deferred file. #}
+  <script>document.documentElement.className+=" js"</script>
+
+  {% if isHome %}
+  {# Marks the homepage as needing the scripted nav reveal: true only when the
+     browser lacks scroll-driven animations (so the CSS path is dead) and the
+     reader has not asked for reduced motion. Inline and in <head> for the same
+     reason as the line above — the stylesheet hides the bar off this class, and
+     setting it any later would paint the bar and then snap it away. #}
+  <script>try{if(!(window.CSS&&CSS.supports&&CSS.supports('animation-timeline: scroll()'))&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.className+=" nav-reveal-js"}catch(e){}</script>
+  {% endif %}
+
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="{{ '/assets/fonts/HaraldReveryTextFont.woff2' | rel }}">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="{{ '/assets/fonts/HaraldReveryMonoFont.woff2' | rel }}">
+
+  <link rel="stylesheet" href="{{ '/assets/main.css' | rel }}">
+  <link rel="stylesheet" href="{{ '/assets/prose.css' | rel }}">
+  {% if needsLightbox %}<link rel="stylesheet" href="{{ '/assets/glightbox.min.css' | rel }}">{% endif %}
+
+  {% if needsReadingWidth %}
+  {# Restores a remembered reading width before first paint. Deferring this to
+     reading_width.js would let the column paint full width and then jump.
+     localStorage throws in some private-browsing modes, hence the try/catch. #}
+  <script>try{var s=localStorage.getItem('reading-scale');if(s)document.documentElement.style.setProperty('--reading-scale',s)}catch(e){}</script>
+  {% endif %}
+
+  <link rel="icon" href="{{ '/assets/favicon.ico' | rel }}" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="{{ '/assets/favicon.svg' | rel }}">
+  <link rel="icon" type="image/png" href="{{ '/assets/favicon-96x96.png' | rel }}" sizes="96x96">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/apple-touch-icon.png' | rel }}">
+  <link rel="mask-icon" href="{{ '/assets/safari-pinned-tab.svg' | rel }}" color="{{ site.themeColor }}">
+  <link rel="manifest" href="{{ '/assets/site.webmanifest' | rel }}">
+
+  {#-
+    Canonical + Open Graph. Emitted ONLY when site_settings.json sets a `url`,
+    and that gate is the whole design: every other URL on this page is relative,
+    which is what lets the output work from a file:// path or a USB stick. These
+    are the one exception — a share card has to name an absolute host — so a
+    site with no canonical home emits none of them rather than pointing at a
+    domain that isn't its own.
+
+    lib/site.js has already checked the value is an absolute http(s) URL and
+    stripped any trailing slash, so a bare concatenation here is safe.
+
+    Note `page.url` for a permalink ending in /index.html is reported by
+    Eleventy as the DIRECTORY url ("/page/thing/"), so a folder page's canonical
+    is the directory. That is what a web server serves and what you want indexed.
+  -#}
+  {%- if site.url %}
+  {% set canonical = site.url + page.url %}
+  <link rel="canonical" href="{{ canonical }}">
+  <meta property="og:type" content="{{ "article" if pageKind == "entry" else "website" }}">
+  <meta property="og:site_name" content="{{ site.name }}">
+  <meta property="og:url" content="{{ canonical }}">
+  <meta property="og:title" content="{{ (title | default(site.name)) }}">
+  <meta property="og:description" content="{{ (description | default(site.description)) }}">
+  <meta property="og:locale" content="{{ site.lang }}">
+  {# ogImage is site-absolute and already per-segment URI-encoded (it points
+     back into input_markdown/, which is shipped alongside the HTML), so it only
+     needs the host in front of it. See pages/pages.11tydata.js. #}
+  {% if ogImage %}<meta property="og:image" content="{{ (site.url + ogImage) }}">{% endif %}
+  <meta name="twitter:card" content="{{ "summary_large_image" if ogImage else "summary" }}">
+  {%- endif %}
+</head>
+<body class="min-h-screen text-zinc-900 dark:text-white{% if isHome %} is-home{% endif %}">
+
+{% include "nav.njk" %}
+
+<div class="bg-topology-map">
+  <main id="main">
+    {{ content | safe }}
+  </main>
+  {% include "footer.njk" %}
+</div>
+
+{% if needsLightbox %}
+<script src="{{ '/assets/javascript/glightbox.min.js' | rel }}" defer></script>
+<script>
+  window.addEventListener("DOMContentLoaded", function () {
+    if (window.GLightbox) GLightbox({ selector: ".glightbox", touchNavigation: true, loop: true, zoomable: true });
+  });
+</script>
+{% endif %}
+
+{% if needsReadingWidth %}
+<script src="{{ '/assets/javascript/reading_width.js' | rel }}" defer></script>
+{% endif %}
+
+{% if isHome %}
+<script src="{{ '/assets/javascript/nav_reveal.js' | rel }}" defer></script>
+{% endif %}
+
+{# Unlike the two above, this one is not gated: the nav is on every page, so
+   there is no page where search should not work. It only wires up listeners —
+   the index itself is not fetched until someone focuses the box. #}
+<script src="{{ '/assets/javascript/search.js' | rel }}" defer></script>
+
+</body>
+</html>

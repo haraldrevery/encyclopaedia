@@ -1,0 +1,46 @@
+{
+	"schemaVersion": "0.1.0",
+	"name": "Default",
+	"behavior": "create",
+	"noteContentFormat": "{{content}}\n\nSource: {{url}}",
+	"properties": [
+		{
+			"name": "title",
+			"value": "{{title}}",
+			"type": "text"
+		},
+		{
+			"name": "author",
+			"value": "{{author}}{{url}}",
+			"type": "text"
+		},
+		{
+			"name": "date",
+			"value": "{{date|date:\\\"YYYY-MM-DD\\\"}}",
+			"type": "text"
+		},
+		{
+			"name": "tags",
+			"value": "[need_sorting]",
+			"type": "multitext"
+		},
+		{
+			"name": "description",
+			"value": "{{description}}",
+			"type": "text"
+		},
+		{
+			"name": "version",
+			"value": "1",
+			"type": "text"
+		},
+		{
+			"name": "category",
+			"value": "[web_scraped]",
+			"type": "text"
+		}
+	],
+	"triggers": [],
+	"noteNameFormat": "{{title}}",
+	"path": "Clippings"
+}

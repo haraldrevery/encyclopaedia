@@ -1,0 +1,30 @@
+{#
+  breadcrumb.njk — the one breadcrumb, used by posts, folder pages and facet
+  pages. It lives in the page body rather than the nav bar: the path belongs to
+  the thing being read, and a reader who has scrolled past the bar has scrolled
+  past the bar.
+
+  `crumbs` is the ancestor chain, handed over as plain data by the scanner —
+  never parsed back out of a filename, so it cannot go out of sync with the
+  folder tree, because it *is* the folder tree. `current` is the trailing
+  segment that names this page and is deliberately not a link.
+
+  `pageUrl` is passed in explicitly: Nunjucks macros don't inherit the caller's
+  context, so relative links have to be told where they start.
+#}
+
+{% macro renderCrumbs(crumbs, current, pageUrl, extraClass) %}
+{% if crumbs and crumbs.length %}
+<ol class="site-breadcrumb {{ extraClass }}" aria-label="Breadcrumb">
+  {% for crumb in crumbs %}
+    <li class="site-breadcrumb__item"><a href="{{ crumb.url | rel(pageUrl) }}">{{ crumb.label }}</a></li>
+    {# The separator after the final crumb is hidden by :last-of-type when no
+       `current` follows it, so both shapes render without a second branch. #}
+    <li class="site-breadcrumb__sep" aria-hidden="true">›</li>
+  {% endfor %}
+  {% if current %}
+    <li class="site-breadcrumb__item site-breadcrumb__item--current" aria-current="page">{{ current }}</li>
+  {% endif %}
+</ol>
+{% endif %}
+{% endmacro %}

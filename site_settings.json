@@ -1,0 +1,26 @@
+{
+  "name": "Encyclopaedia",
+  "shortName": "Encyclopaedia",
+  "description": "An offline-first reference generated from a folder of markdown.",
+
+  "url": "",
+  "lang": "en-GB",
+
+  "themeColor": "#000000",
+  "backgroundColor": "#ffffff",
+
+  "maxPostsPerPage": 60,
+
+  "nav": [
+    { "label": "Home",  "link": "/index.html",    "order": 1 },
+    { "label": "Index", "link": "/page/all.html", "order": 2 }
+  ],
+
+  "footerLinks": [
+    { "label": "Home",       "link": "/index.html",       "order": 1 },
+    { "label": "Full index", "link": "/page/all.html",    "order": 2 },
+    { "label": "About",      "link": "/about.html",       "order": 3 },
+    { "label": "Legal",      "link": "/legal.html",       "order": 4 },
+    { "label": "Status",     "link": "/page/status.html", "order": 5 }
+  ]
+}

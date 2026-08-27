@@ -1,0 +1,16 @@
+HaraldRevery Text and HaraldRevery Mono
+Copyright (c) 2025-2026 Harald Mark Thirslund. All rights reserved.
+
+These typefaces are original work. They are included in this project so that the
+site renders as designed, and are licensed for display on this site only.
+
+No permission is granted to copy, modify, redistribute, embed in another
+project, or use them in any other work. They are NOT covered by the MIT licence
+that applies to this project's source code -- see LICENCE.md, part 2.
+
+If you fork this project, supply your own typeface: edit the two @font-face
+blocks in css/theme.css and the two preload links in eleventy_settings/base.njk.
+Both stacks fall back to sans-serif and monospace, so removing these files
+without editing anything still gives you a working site.
+
+For licensing enquiries, contact haraldreverycontact@gmail.com

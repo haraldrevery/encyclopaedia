@@ -1,0 +1,46 @@
+{#
+  filter-bar.njk — category pills and a collapsible tag cloud for one folder.
+
+  Facets cover the whole subtree, not just the current folder, so filtering a
+  top-level section still finds documents nested four levels below it.
+
+  Both rows are built from `node.facets`, the list scan.js decided was worth a
+  page, rather than from every value in the folder. A pill for a tag only one
+  entry carries, or one every entry carries, filters nothing — it just reloads
+  the same cards under a different heading. Reading the same list the pages are
+  written from also means a pill can never point at a page that wasn't built.
+#}
+
+{% macro renderFilters(node, activeKind, activeValue, pageUrl) %}
+{% set categories = node.facets | selectattr("kind", "equalto", "category") | list %}
+{% set tags = node.facets | selectattr("kind", "equalto", "tag") | list %}
+{% if categories.length or tags.length %}
+<div class="filter-bar">
+
+  {% if categories.length %}
+  <div class="filter-row">
+    <span class="filter-label">Category</span>
+    <a href="{{ node.url | rel(pageUrl) }}"
+       class="filter-pill{{ ' filter-pill--active' if not activeKind }}">All</a>
+    {% for facet in categories %}
+      <a href="{{ facet.url | rel(pageUrl) }}"
+         class="filter-pill{{ ' filter-pill--active' if activeKind == 'category' and activeValue == facet.value }}">{{ facet.value }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if tags.length %}
+  <details class="tag-filter"{{ ' open' if activeKind == 'tag' }}>
+    <summary class="filter-label">Tags <span class="tag-filter__count">{{ tags.length }}</span></summary>
+    <div class="tag-cloud">
+      {% for facet in tags %}
+        <a href="{{ facet.url | rel(pageUrl) }}"
+           class="tag-pill{{ ' tag-pill--active' if activeKind == 'tag' and activeValue == facet.value }}">{{ facet.value }}</a>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endmacro %}

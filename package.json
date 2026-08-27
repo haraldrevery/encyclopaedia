@@ -1,0 +1,26 @@
+{
+  "name": "encyclopedia",
+  "version": "18.0.0",
+  "description": "Turns a folder of markdown into a browsable offline site.",
+  "private": true,
+  "license": "SEE LICENCE IN LICENCE.md",
+  "author": "Harald Mark Thirslund",
+  "scripts": {
+    "build": "eleventy",
+    "start": "eleventy --serve --incremental",
+    "css": "./tailwindcss-linux-x64 -i css/input.css -o css/main.css --content './pages/**/*.njk,./eleventy_settings/**/*.njk' --minify && ./tailwindcss-linux-x64 -i css/input_prose.css -o css/prose.css --content './pages/**/*.njk,./eleventy_settings/**/*.njk' --minify",
+    "compile": "./eleventy_binary/compile.sh",
+    "check": "./healthcheck.sh",
+    "test": "node test/report.mjs",
+    "test:watch": "node --test --watch test/*.test.js"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "gray-matter": "^4.0.3",
+    "katex": "^0.16.21",
+    "markdown-it": "^14.1.0",
+    "markdown-it-attrs": "^4.2.0",
+    "markdown-it-link-attributes": "^4.0.1",
+    "markdown-it-texmath": "^1.0.0"
+  }
+}
