@@ -20,6 +20,10 @@
 
 import path from "node:path";
 import fs from "node:fs";
+// Side-effect import, and it must stay ABOVE the Eleventy import: it repairs an
+// fs.existsSync bug in Bun's Windows build that otherwise makes the .exe write
+// zero pages while still exiting 0. See the file for the full explanation.
+import "./win-fs-shim.mjs";
 import Eleventy from "@11ty/eleventy";
 
 const args = process.argv.slice(2);
@@ -128,11 +132,14 @@ await elev.initializeConfig({
 });
 
 try {
-  const written = await elev.write();
+  // write() resolves to [passthroughCopyResults, templateResults] — a pair, so
+  // its own length is always 2 and never says anything about the build. The
+  // template list is the half that matters.
+  const [, templates] = (await elev.write()) ?? [];
   // Belt and braces for the same failure as the guard above: a build that
   // renders nothing is never a success, and exiting 0 on it is how an empty
   // bundle gets shipped without anyone noticing.
-  if (Array.isArray(written) && written.length === 0) {
+  if (Array.isArray(templates) && templates.length === 0) {
     console.error("Nothing was written — no templates were found to render.");
     console.error(`Run this from the project folder, not from ${process.cwd()}.`);
     process.exit(1);
