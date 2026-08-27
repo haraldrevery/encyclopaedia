@@ -1285,18 +1285,75 @@
   }
 
   .download-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  /* A COLUMN now, not a row: the name/size line moved into __head so a file can
+     carry its checksums underneath without fighting space-between for position.
+     Padding, border, font and size are unchanged, so a file whose checksums
+     could not be computed renders exactly as this list did before. */
   .download-item {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.35rem;
     padding: 0.7rem 0;
     border-bottom: 1px solid rgb(0 0 0 / 0.08);
     font-family: var(--font-mono);
     font-size: 0.875rem;
   }
+  .download-item__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    min-width: 0;
+  }
   .download-item a:hover { text-decoration: underline; text-underline-offset: 4px; }
   .download-item__size { opacity: 0.45; white-space: nowrap; }
+
+  /* Checksums. A grid rather than a flex row so both labels share one column
+     and the hex starts at the same x whether the label reads SHA-256 or
+     SHA-512. */
+  .checksum-list {
+    display: grid;
+    /* minmax(0, 1fr) is load-bearing, not decoration. A bare `1fr` means
+       minmax(auto, 1fr), and `auto` floors the track at its min-content width —
+       which for an unbreakable 128-character run of hex is about 850px. That
+       one omission is what turns an entry page into a horizontally scrolling
+       page on a phone. */
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.15rem;
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+  }
+  .checksum-list__label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.45;
+    white-space: nowrap;
+  }
+  .checksum-list__value {
+    margin: 0;
+    min-width: 0;
+    /* `anywhere`, not `break-word`: only `anywhere` also lets the grid track's
+       min-content contribution collapse, which is what actually stops the
+       digest forcing the page wide. Deliberately NOT overflow-x: auto — a
+       horizontal scroller nested inside a vertical page is worse on touch than
+       a wrapped digest. */
+    overflow-wrap: anywhere;
+    /* One click, or one long-press on a phone, selects the whole digest.
+       Without it a double-click stops at the first run of characters. */
+    user-select: all;
+    opacity: 0.7;
+  }
+
+  /* Below ~640px there is no useful run of hex left beside a label, so the
+     label goes above its value and the digest gets the full width. */
+  @media (max-width: 40rem) {
+    .checksum-list { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+    .checksum-list__label { margin-top: 0.35rem; }
+  }
+
   @media (prefers-color-scheme: dark) {
     .download-item { border-bottom-color: rgb(255 255 255 / 0.1); }
   }

@@ -62,8 +62,28 @@
   <ul class="download-list">
     {% for file in media.downloads %}
       <li class="download-item">
-        <a href="{{ file.url | rel }}" download>{{ file.filename }}</a>
-        <span class="download-item__size">{{ file.kb | kb }}</span>
+        {# The row .download-item used to BE: name on the left, size on the right. #}
+        <div class="download-item__head">
+          <a href="{{ file.url | rel }}" download>{{ file.filename }}</a>
+          <span class="download-item__size">{{ file.kb | kb }}</span>
+        </div>
+        {# Absent entirely when a file could not be read, in which case the row
+           renders exactly as it did before checksums existed. A <dl>, not a
+           pair of spans: "SHA-256" is the NAME of the value beside it, and a
+           description list is the only markup that carries that relationship
+           to a screen reader without ARIA. #}
+        {% if file.sha256 or file.sha512 %}
+        <dl class="checksum-list">
+          {% if file.sha256 %}
+            <dt class="checksum-list__label">SHA-256</dt>
+            <dd class="checksum-list__value">{{ file.sha256 }}</dd>
+          {% endif %}
+          {% if file.sha512 %}
+            <dt class="checksum-list__label">SHA-512</dt>
+            <dd class="checksum-list__value">{{ file.sha512 }}</dd>
+          {% endif %}
+        </dl>
+        {% endif %}
       </li>
     {% endfor %}
   </ul>

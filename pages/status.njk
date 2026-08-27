@@ -243,6 +243,30 @@ pageDescription: What the generator produced, what it had to guess, and what it 
     {% endif %}
   </section>
 
+  {# ── Unhashed files ───────────────────────────────────────────────────── #}
+  {% set sev = report.severity.checksums %}
+  <section class="health-section" id="checksums">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.checksums.length }}">
+      {% if health.checksums.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Unhashed files
+    </h2>
+    {% if health.checksums.length %}
+      <p class="health-section__lede">
+        These files are still listed and still download, but the SHA-256 and
+        SHA-512 shown beside every other file are missing from them: the file
+        could not be read. Check its permissions.
+      </p>
+      <ul class="health-list health-list--compact">
+        {% for row in health.checksums %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, row.url, page.url) }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every file in a Files list carries both checksums.</p>
+    {% endif %}
+  </section>
+
   {# ── Oversized thumbnails ─────────────────────────────────────────────── #}
   {% set sev = report.severity.oversized %}
   <section class="health-section" id="oversized">
