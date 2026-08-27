@@ -1,0 +1,123 @@
+---
+pagination:
+  data: library.folderPages
+  size: 1
+  alias: item
+permalink: "{{ item.permalink }}"
+layout: base.njk
+pageKind: folder
+---
+{#
+  folder.njk — the listing page for EVERY directory, at any depth, including
+  the root (which is the site homepage at content/index.html).
+
+  v13 needed six near-identical templates because hierarchy was encoded in
+  filenames and each level had its own shape. Here a folder is a folder, so
+  the same template renders a top-level section and something six levels down
+  without knowing the difference.
+
+  The root is the one exception, and only in presentation. It renders as two
+  stacked blocks rather than one:
+
+    .home-hero    a full-viewport entrance holding nothing but the title and
+                  the description. The title lands character by character and
+                  the description scatters in word by word, both pure CSS —
+                  which is why the hero carries no extra_fade_effect: a block
+                  fade over the top would flatten both into one.
+    .home-index   the "video game menu" below the fold — the sections as plain
+                  rows with a › sliding in on hover. No cards, no thumbnails,
+                  no tag cloud. The front page is a table of contents;
+                  filtering lives one level down, where there is something to
+                  filter.
+#}
+{% from "breadcrumb.njk" import renderCrumbs %}
+{% from "card-grid.njk" import renderCards %}
+{% from "filter-bar.njk" import renderFilters %}
+{% from "pagination.njk" import renderPagination %}
+
+{% set node = item.node %}
+
+{% if node.depth == 0 %}
+
+  <section class="home-hero">
+
+    {# animateChars, not the animateTitle used on every other heading: the
+       characters scatter instead of sweeping left to right, over a shorter
+       window than the words below them so the name settles first. #}
+    <h1 class="home-title" aria-label="{{ site.name }}">{{ site.name | animateChars | safe }}</h1>
+    <p class="home-subtitle">{{ site.description | animateWords | safe }}</p>
+
+    {# A real link, not a decorative arrow: it is keyboard-reachable, and the
+       smooth scroll comes free from the scroll-smooth class in base.njk. #}
+    <a class="home-hero__cue" href="#sections">
+      <span class="home-hero__cue-label">Sections</span>
+      <span class="home-hero__cue-arrow" aria-hidden="true">↓</span>
+    </a>
+
+  </section>
+
+  <div id="sections" class="page-container home-index extra_fade_effect">
+
+    {% if item.items.length %}
+      <ul class="game-menu" role="list">
+        {% for menuItem in item.items %}
+        <li class="game-menu__item">
+          <a href="{{ menuItem.url | rel }}" class="game-menu__link">
+            <span class="game-menu__name">{{ menuItem.title }}</span>
+            <span class="game-menu__count">
+              {%- if menuItem.type == "folder" -%}
+                {{ menuItem.count }} {{ "entry" if menuItem.count == 1 else "entries" }}
+              {%- elif menuItem.variantCount > 1 -%}
+                {{ menuItem.variantCount }} versions
+              {%- else -%}
+                {{ menuItem.date | readableDate }}
+              {%- endif -%}
+            </span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state empty-state--large">
+        <p>No markdown found in <code>content/input_markdown/</code>.</p>
+        <p>Drop a project folder in there and build again.</p>
+      </div>
+    {% endif %}
+
+    {{ renderPagination(item, page.url) }}
+
+  </div>
+
+{% else %}
+
+  <div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+    <header class="section-header">
+      {{ renderCrumbs(crumbs, "Folder", page.url, "site-breadcrumb--kicker") }}
+      <h1 class="section-header__title">{{ node.label | animateTitle | safe }}</h1>
+      <p class="section-header__meta">
+        {{ node.totalEntries }} {{ "entry" if node.totalEntries == 1 else "entries" }}
+        {%- if node.children.length %} · {{ node.children.length }} {{ "subfolder" if node.children.length == 1 else "subfolders" }}{% endif %}
+        {%- if item.totalPages > 1 %} · page {{ item.pageNumber }} of {{ item.totalPages }}{% endif %}
+      </p>
+    </header>
+
+    {{ renderFilters(node, null, null, page.url) }}
+
+    {% if item.items.length %}
+      {{ renderCards(item.items, page.url) }}
+    {% else %}
+      <p class="empty-state">Nothing here yet.</p>
+    {% endif %}
+
+    {{ renderPagination(item, page.url) }}
+
+    <p class="back-link">
+      <a href="{{ node.breadcrumb[node.breadcrumb.length - 1].url | rel }}">
+        ← Back to {{ node.breadcrumb[node.breadcrumb.length - 1].label }}
+      </a>
+    </p>
+
+  </div>
+
+{% endif %}

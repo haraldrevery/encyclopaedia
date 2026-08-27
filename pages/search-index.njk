@@ -1,0 +1,26 @@
+---
+permalink: /assets/search-index.js
+---
+{#
+  search-index.njk — the metadata the nav search box scores against.
+
+  A .js file rather than .json, and loaded with a <script src> rather than
+  fetch(), because fetch() on a file:// page is blocked by CORS in Chrome. The
+  whole site is built to run off a USB stick; an index the stick can't read
+  would be a search box that works only on the demo.
+
+  Nothing here goes through the `rel` filter, which is the one place on the
+  site that is true. Every other asset is referenced FROM a page and can be
+  resolved against it; this one is a single file whose contents are read BY
+  pages at every depth at once. It therefore stores root-relative URLs, and
+  javascript/search.js prefixes them with the data-root the page hands it.
+
+  One assignment and nothing else — no "ready" event to announce itself. The
+  script tag's own load event already fires after this file has executed, so
+  search.js can simply wait on that and know the array is there.
+
+  `dump` is Nunjucks' JSON.stringify — it supplies the quotes and escapes the
+  strings properly. escape_attr would be wrong here for the same reason it is
+  wrong in webmanifest.njk: this is JavaScript, not HTML.
+#}
+window.__SEARCH_INDEX__ = {{ library.allEntries | searchIndex | dump | safe }};

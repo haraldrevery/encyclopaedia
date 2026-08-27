@@ -1,0 +1,57 @@
+---
+permalink: /page/all.html
+layout: base.njk
+pageTitle: Full index
+pageDescription: Every entry on one page.
+---
+{#
+  all.njk — every entry in the whole tree on a single page, grouped by folder.
+
+  Deliberately one flat document with no pagination: browser find-in-page over
+  the lot is the fastest way to locate something, and it needs no JavaScript.
+#}
+
+<div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+  <header class="section-header">
+    <p class="section-header__kicker">Index</p>
+    <h1 class="section-header__title">{{ "Full index" | animateTitle | safe }}</h1>
+    <p class="section-header__meta">
+      {{ library.stats.entries }} entries · {{ library.stats.variants }} documents
+    </p>
+    <p class="index-hint">Press Ctrl+F / ⌘+F to search this page.</p>
+  </header>
+
+  {% for node in library.nodes %}
+    {% if node.entries.length %}
+    {# A collapsed folder has no listing page, so its heading points at the
+       parent that does — otherwise the heading and the single row beneath it
+       would be two links to the same document. #}
+    {% set sectionUrl = node.breadcrumb[node.breadcrumb.length - 1].url if node.collapsed else node.url %}
+    <section class="index-section">
+      <h2 class="index-section__title">
+        <a href="{{ sectionUrl | rel }}">
+          {%- for crumb in node.breadcrumb %}{{ crumb.label }} <span class="index-sep">›</span> {% endfor -%}
+          {{ node.label }}
+        </a>
+      </h2>
+      <ul class="index-list">
+        {% for entry in node.entries %}
+        <li class="index-row">
+          <a class="index-row__title" href="{{ entry.url | rel }}">{{ entry.title }}</a>
+          <span class="index-row__meta">
+            <time datetime="{{ entry.date | isoDate }}">{{ entry.date | readableDate }}</time>
+            · {{ entry.author }}
+            {%- if entry.variants.length > 1 %} · {{ entry.variants.length }} versions{% endif %}
+          </span>
+          {% if entry.tags.length %}
+          <span class="index-row__tags">{{ entry.tags | join(" · ") }}</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  {% endfor %}
+
+</div>

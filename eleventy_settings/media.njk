@@ -1,0 +1,71 @@
+{#
+  media.njk — the media that sits alongside a document in its folder.
+
+  Every src points back into input_markdown/ relatively. Nothing here was
+  copied into the built site; these are the author's original files.
+#}
+{% set media = folder.media %}
+
+{% if media.images.length %}
+<section class="media-section">
+  <h2 class="media-section__title">Images</h2>
+  <div class="image-grid">
+    {% for image in media.images %}
+      <a href="{{ image.url | rel }}" class="image-grid__item glightbox"
+         data-gallery="entry" data-title="{{ image.filename }}">
+        <img src="{{ image.url | rel }}" alt="{{ image.filename }}" loading="lazy" decoding="async">
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if media.videos.length %}
+<section class="media-section">
+  <h2 class="media-section__title">Video</h2>
+  <div class="media-stack">
+    {% for video in media.videos %}
+      <figure class="media-figure">
+        <video class="media-embed" controls preload="metadata" playsinline>
+          <source src="{{ video.url | rel }}" type="{{ video.mime }}">
+          Your browser cannot play this video.
+          <a href="{{ video.url | rel }}">Download {{ video.filename }}</a>.
+        </video>
+        <figcaption>{{ video.filename }}</figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if media.audios.length %}
+<section class="media-section">
+  <h2 class="media-section__title">Audio</h2>
+  <div class="media-stack">
+    {% for audio in media.audios %}
+      <figure class="media-figure">
+        <audio class="media-embed" controls preload="metadata">
+          <source src="{{ audio.url | rel }}" type="{{ audio.mime }}">
+          Your browser cannot play this audio.
+          <a href="{{ audio.url | rel }}">Download {{ audio.filename }}</a>.
+        </audio>
+        <figcaption>{{ audio.filename }}</figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if media.downloads.length %}
+<section class="media-section">
+  <h2 class="media-section__title">Files</h2>
+  <ul class="download-list">
+    {% for file in media.downloads %}
+      <li class="download-item">
+        <a href="{{ file.url | rel }}" download>{{ file.filename }}</a>
+        <span class="download-item__size">{{ file.kb | kb }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

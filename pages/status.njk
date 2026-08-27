@@ -1,0 +1,394 @@
+---
+permalink: /page/status.html
+layout: base.njk
+pageTitle: Status
+pageDescription: What the generator produced, what it had to guess, and what it could not find.
+---
+{#
+  status.njk — the build's own report card.
+
+  It opens with what the build produced, because that is the first thing worth
+  knowing and the rest of the page never says it: the generator is built never
+  to stop, so a page of findings alone can't tell you whether a site came out
+  of it. Everything after the green tile is the list of what had to be inferred
+  or defaulted, so you can fix what matters and ignore what doesn't.
+
+  Link and file-size checking lives in healthcheck.sh / healthcheck.ps1, which
+  run against the finished HTML.
+
+  Findings are ranked low / medium / high — yellow, orange, red — by how visible
+  the problem is in the built site. The rank is decided in buildHealthReport()
+  in lib/library.js, never here; this file only paints what it is handed. Each
+  colour carries a ●/●●/●●● marker so the ranking still reads in greyscale, and
+  the green tile carries a ✓ for the same reason.
+#}
+{% set report = library.report %}
+{% set health = library.health %}
+{% set pages = library.stats.pages %}
+
+{#
+  findingPath — a finding's path, as a link when there is somewhere to go.
+
+  `pageUrl` is passed in explicitly and is NOT optional: Nunjucks macros do not
+  inherit the caller's context, so the `rel` filter cannot reach `page.url` from
+  in here and would silently resolve every href against "/". card-grid.njk has
+  the same note for the same reason.
+
+  Opens in a new tab on purpose — the point of the report is working down a list
+  of findings, and following one in place loses your place in thirty rows.
+
+  A row with no url renders exactly as it did before links existed, which is
+  what the settings section and any unresolvable finding fall back to.
+#}
+{% macro findingPath(text, url, pageUrl) %}
+{%- if url -%}
+<a class="health-item__path health-item__path--link" href="{{ url | rel(pageUrl) }}"
+   target="_blank" rel="noopener">{{ text }}</a>
+{%- else -%}
+<code class="health-item__path">{{ text }}</code>
+{%- endif -%}
+{% endmacro %}
+
+<div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+  <header class="section-header">
+    <p class="section-header__kicker">Report</p>
+    <h1 class="section-header__title">{{ "Status" | animateTitle | safe }}</h1>
+    <p class="section-header__meta">
+      {{ library.stats.variants }} documents · {{ report.cleanFiles }} fully annotated ·
+      {% if report.worst %}<span class="health-sev health-sev--{{ report.worst }}">{{ report.totalFindings }} findings</span>{% else %}{{ report.totalFindings }} findings{% endif %}
+    </p>
+  </header>
+
+  <div class="health-summary">
+    {# Not a link, unlike every tile beside it: there is no section to jump to,
+       because a page that rendered has nothing to say for itself. #}
+    <div class="health-tile health-tile--ok">
+      <span class="health-tile__count">{{ pages.ok }}</span>
+      <span class="health-tile__label">
+        <span class="health-mark">✓</span>Pages rendered
+      </span>
+      <span class="health-tile__note">
+        {{ pages.documents }} documents · {{ pages.folders }} folders ·
+        {{ pages.facets }} tag pages · {{ pages.site }} site pages
+      </span>
+    </div>
+
+    {% for section in report.sections %}
+      {# A section with nothing in it is nothing to focus on: it stays grey. #}
+      <a class="health-tile{{ ' health-tile--zero' if section.count == 0 else ' health-tile--' + section.severity }}" href="#{{ section.key }}">
+        <span class="health-tile__count">{{ section.count }}</span>
+        <span class="health-tile__label">
+          {% if section.count %}<span class="health-mark">{{ section.mark }}</span>{% endif %}{{ section.label }}
+        </span>
+        <span class="health-tile__note">{{ section.note }}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  {# ── Failed to render ─────────────────────────────────────────────────────
+     First because it is the only finding on this page that means a document is
+     missing from the site rather than merely thin: the renderer crashed, the
+     page was still written, and its body is a one-line apology. #}
+  {% set sev = report.severity.render %}
+  <section class="health-section" id="render">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.render.length }}">
+      {% if health.render.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Failed to render
+    </h2>
+    {% if health.render.length %}
+      <p class="health-section__lede">
+        The build did not stop, and the page exists — but everything these files
+        had to say is gone from it. This is the one thing on this page worth
+        fixing before anything else.
+      </p>
+      <ul class="health-list">
+        {% for row in health.render %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, row.url, page.url) }}
+            <span class="health-item__note">{{ row.message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every document rendered.</p>
+    {% endif %}
+  </section>
+
+  {# ── Settings ─────────────────────────────────────────────────────────────
+     Second, and for the same reason render is first: a setting that did not
+     take means the site is not the site that was asked for, and nothing else
+     anywhere would ever mention it. A missing settings file is not a finding —
+     the defaults are a perfectly good site. #}
+  {% set sev = report.severity.settings %}
+  <section class="health-section" id="settings">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.settings.length }}">
+      {% if health.settings.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Settings
+    </h2>
+    {% if health.settings.length %}
+      <p class="health-section__lede">
+        These values in <code>site_settings.json</code> could not be used, so the
+        built-in default was applied instead. The build was never at risk; the
+        site simply is not what the file asked for.
+      </p>
+      <ul class="health-list">
+        {% for row in health.settings %}
+          <li class="health-item health-item--{{ sev.level }}">
+            <code class="health-item__path">{{ row.field }}</code>
+            <span class="health-item__note">{{ row.message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% elif library.stats.settingsFound %}
+      <p class="health-ok">
+        Every setting in <code>site_settings.json</code> was applied
+        ({{ library.stats.itemsPerPage }} cards per page).
+      </p>
+    {% else %}
+      <p class="health-ok">
+        No <code>site_settings.json</code> — the built-in defaults were used
+        ({{ library.stats.itemsPerPage }} cards per page). Create one at
+        <code>{{ library.stats.settingsFile }}</code> to set the name,
+        navigation and page size.
+      </p>
+    {% endif %}
+  </section>
+
+  {# ── Metadata ─────────────────────────────────────────────────────────── #}
+  {# The only section ranked per row rather than per section: one file can hold
+     a missing author (low) and no frontmatter at all (high) at once. #}
+  {% set sev = report.severity.metadata %}
+  <section class="health-section" id="metadata">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if report.byFile.length }}">
+      {% if report.byFile.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Metadata
+    </h2>
+    {% if report.byFile.length %}
+      <p class="health-section__lede">
+        These files build and display correctly. Each one below simply had a field
+        the generator filled in for it.
+      </p>
+
+      <ul class="health-tally">
+        {% for row in report.byField %}
+          <li class="health-tally__row--{{ row.severity }}">
+            <span class="health-tally__count">{{ row.count }}</span> {{ row.label }}
+          </li>
+        {% endfor %}
+      </ul>
+
+      <ul class="health-list">
+        {% for file in report.byFile %}
+        <li class="health-item health-item--{{ file.severity }}">
+          {{ findingPath(file.file, file.url, page.url) }}
+          <ul class="health-item__detail">
+            {% for warning in file.warnings %}
+              <li>
+                <span class="health-field health-field--{{ warning.severity }}"><span class="health-mark">{{ warning.mark }}</span>{{ warning.field }}</span>
+                {{ warning.message }}
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every document declares every field.</p>
+    {% endif %}
+  </section>
+
+  {# ── Structure ────────────────────────────────────────────────────────── #}
+  {% set sev = report.severity.structure %}
+  <section class="health-section" id="structure">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.structure.length }}">
+      {% if health.structure.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Structure
+    </h2>
+    {% if health.structure.length %}
+      <p class="health-section__lede">
+        No page is written for these, and nothing links to them. A folder with
+        empty folders inside it is named once, here, rather than once per level.
+      </p>
+      <ul class="health-list">
+        {% for row in health.structure %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.path, row.url, page.url) }}
+            <span class="health-item__note">{{ row.message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every folder produces at least one page.</p>
+    {% endif %}
+  </section>
+
+  {# ── Unreferenced media ───────────────────────────────────────────────── #}
+  {% set sev = report.severity.media %}
+  <section class="health-section" id="media">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.unreferenced.length }}">
+      {% if health.unreferenced.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Unreferenced media
+    </h2>
+    {% if health.unreferenced.length %}
+      <p class="health-section__lede">
+        These sit in folders with no markdown, so no page links to them.
+        They are not copied anywhere — they just take up space in your project.
+      </p>
+      <ul class="health-list health-list--compact">
+        {% for row in health.unreferenced %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.path, row.url, page.url) }}
+            <span class="health-item__size">{{ row.kb | kb }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every media file sits beside a document that shows it.</p>
+    {% endif %}
+  </section>
+
+  {# ── Oversized thumbnails ─────────────────────────────────────────────── #}
+  {% set sev = report.severity.oversized %}
+  <section class="health-section" id="oversized">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.oversized.length }}">
+      {% if health.oversized.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Oversized thumbnails
+    </h2>
+    {% if health.oversized.length %}
+      <p class="health-section__lede">
+        A thumbnail loads on every card that shows it, so the cost is paid many
+        times over. Budget is {{ library.thumbnailBudgetKb }} KB.
+      </p>
+      <p class="health-section__lede">
+        A row marked <em>picked</em> is not a <code>thumbnail.*</code> you chose:
+        it is the smallest image in that folder, used as the card image because
+        nothing there was inside the budget. Add a small
+        <code>thumbnail.jpg</code> to the folder and it will be used instead.
+      </p>
+      <ul class="health-list health-list--compact">
+        {% for row in health.oversized %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, row.url, page.url) }}
+            <span class="health-item__note">{{ "picked" if row.picked else "thumbnail" }}</span>
+            <span class="health-item__size health-item__size--over">{{ row.kb | kb }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">All thumbnails are within budget.</p>
+    {% endif %}
+  </section>
+
+  {# ── Duplicate titles ─────────────────────────────────────────────────── #}
+  {% set sev = report.severity.duplicates %}
+  <section class="health-section" id="duplicates">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.duplicates.length }}">
+      {% if health.duplicates.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Duplicate titles
+    </h2>
+    {% if health.duplicates.length %}
+      <p class="health-section__lede">
+        Not a problem for the build — each keeps its own URL — but they are
+        indistinguishable in the index.
+      </p>
+      <ul class="health-list">
+        {% for row in health.duplicates %}
+          <li class="health-item health-item--{{ sev.level }}">
+            <span class="health-item__title">{{ row.title }}</span>
+            <ul class="health-item__detail">
+              {% for p in row.paths %}<li>{{ findingPath(p.path, p.url, page.url) }}</li>{% endfor %}
+            </ul>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every title is unique.</p>
+    {% endif %}
+  </section>
+
+  {# ── Renamed URLs ─────────────────────────────────────────────────────── #}
+  {% set sev = report.severity.collisions %}
+  <section class="health-section" id="collisions">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.collisions.length }}">
+      {% if health.collisions.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Renamed URLs
+    </h2>
+    {% if health.collisions.length %}
+      <p class="health-section__lede">
+        These wanted a URL the generator had already given to something else —
+        another file in the same folder, or a page the site writes itself
+        (a folder's own <code>index.html</code>, or its <code>category/</code>
+        and <code>tag/</code> pages). They were renamed rather than allowed to
+        collide, since a duplicate URL stops the build outright. Every link
+        works; it just no longer matches the name on disk.
+      </p>
+      <ul class="health-list health-list--compact">
+        {% for row in health.collisions %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.path, row.url, page.url) }}
+            <span class="health-item__note">
+              → {{ row.slug }}{{ "/" if row.kind == "folder" else ".html" }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">No filename produced a colliding URL.</p>
+    {% endif %}
+  </section>
+
+  {# ── Facet spellings ──────────────────────────────────────────────────── #}
+  {% set sev = report.severity.facets %}
+  <section class="health-section" id="facets">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.facets.length }}">
+      {% if health.facets.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Tag spellings
+    </h2>
+    {% if health.facets.length %}
+      <p class="health-section__lede">
+        These spellings share one URL, so they have been merged onto a single
+        page under the most-used version. The site works; the files are still
+        inconsistent, and only you can say which spelling is the right one.
+      </p>
+      <ul class="health-list">
+        {% for row in health.facets %}
+          <li class="health-item health-item--{{ sev.level }}">
+            <span class="health-field">{{ row.kind }}</span>
+            <span class="health-item__title">{{ row.kept }}</span>
+            {{ findingPath(row.path, row.url, page.url) }}
+            <ul class="health-item__detail">
+              <li>{{ row.variants | join(" · ") }}</li>
+            </ul>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every tag and category is spelled one way.</p>
+    {% endif %}
+  </section>
+
+  {# ── Math ─────────────────────────────────────────────────────────────── #}
+  {% set sev = report.severity.math %}
+  <section class="health-section" id="math">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.math.length }}">
+      {% if health.math.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Math errors
+    </h2>
+    {% if health.math.length %}
+      <p class="health-section__lede">
+        These render in red on the page rather than breaking it.
+      </p>
+      <ul class="health-list">
+        {% for row in health.math %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, row.url, page.url) }}
+            <code class="health-item__tex">{{ row.tex }}</code>
+            <span class="health-item__note">{{ row.message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">All math parsed cleanly.</p>
+    {% endif %}
+  </section>
+
+  <p class="health-footnote">
+    Everything above is about <code>input_markdown/</code>. The About and Legal
+    pages are site chrome and are counted but not diagnosed here.
+    Broken links, wrong-cased paths and image size budgets are checked separately,
+    against the built HTML — run <code>./healthcheck.sh</code> or
+    <code>healthcheck.bat</code>.
+  </p>
+
+</div>

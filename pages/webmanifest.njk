@@ -1,0 +1,42 @@
+---
+permalink: /assets/site.webmanifest
+---
+{#
+  webmanifest.njk — the web app manifest, generated so it can never drift from
+  lib/site.js. It used to be a static file copied into assets/, which is how it
+  ended up describing an entirely different website.
+
+  Every URL here is RELATIVE to the manifest's own location, the same discipline
+  the `rel` filter enforces in the templates: from /assets/site.webmanifest,
+  "web-app-manifest-192x192.png" is the file beside it and "../index.html" is the
+  homepage, wherever the bundle has been moved to.
+
+  `dump` is Nunjucks' JSON.stringify — it supplies the quotes and escapes the
+  string properly. escape_attr would be wrong here: this is JSON, not HTML, and
+  it would turn & into &amp;.
+#}
+{
+  "name": {{ site.name | dump | safe }},
+  "short_name": {{ site.shortName | dump | safe }},
+  "description": {{ site.description | dump | safe }},
+  "icons": [
+    {
+      "src": "web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": {{ site.themeColor | dump | safe }},
+  "background_color": {{ site.backgroundColor | dump | safe }},
+  "display": "standalone",
+  "orientation": "any",
+  "start_url": "../index.html",
+  "scope": "../"
+}

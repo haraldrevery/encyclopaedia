@@ -1,0 +1,60 @@
+{#
+  card-grid.njk — the one card grid, used by folder pages, facet pages and the
+  homepage. `pageUrl` is passed in explicitly: Nunjucks macros don't inherit
+  the caller's context, so relative links have to be told where they start.
+
+  An item is either a folder (a child directory) or an entry (a document, or a
+  set of documents sharing a title).
+#}
+
+{% macro renderCards(items, pageUrl) %}
+{% if items and items.length %}
+<div class="card-grid">
+  {% for item in items %}
+  <article class="card card--{{ item.type }}" style="--i:{{ loop.index0 }}">
+    <a href="{{ item.url | rel(pageUrl) }}" class="card__link">
+      <div class="card__thumb">
+        {% if item.thumbnail %}
+          <img src="{{ item.thumbnail.url | rel(pageUrl) }}" alt="" loading="lazy" decoding="async">
+        {% else %}
+          <span class="card__thumb-empty" aria-hidden="true">
+            {{- "▤" if item.type == "folder" else "▦" -}}
+          </span>
+        {% endif %}
+        {% if item.type == "folder" %}
+          <span class="card__badge">{{ item.count }} {{ "entry" if item.count == 1 else "entries" }}</span>
+        {% elif item.variantCount > 1 %}
+          <span class="card__badge">{{ item.variantCount }} versions</span>
+        {% endif %}
+      </div>
+
+      {% if item.categories and item.categories.length %}
+      <p class="card__categories">
+        {% for category in item.categories | take(3) %}<span class="card__category">{{ category }}</span>{% endfor %}
+      </p>
+      {% endif %}
+
+      <h3 class="card__title">{{ item.title }}</h3>
+
+      {% if item.description %}
+      <p class="card__desc">{{ item.description }}</p>
+      {% endif %}
+    </a>
+
+    <div class="card__footer">
+      <time datetime="{{ item.date | isoDate }}">{{ item.date | readableDate }}</time>
+      {% if item.author %}<span class="card__author">{{ item.author }}</span>{% endif %}
+    </div>
+
+    {% if item.tags and item.tags.length %}
+    <p class="card__tags">
+      {% for tag in item.tags | take(4) %}<span class="card__tag">{{ tag }}</span>{% endfor %}
+    </p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">Nothing here yet.</p>
+{% endif %}
+{% endmacro %}

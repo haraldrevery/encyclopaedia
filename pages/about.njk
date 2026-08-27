@@ -1,0 +1,68 @@
+---
+permalink: /about.html
+layout: base.njk
+pageTitle: About
+pageDescription: What this encyclopaedia is, and how it is built.
+wantsLightbox: true
+---
+{#
+  about.njk — the only page with a portrait.
+
+  Nothing here is written in the template. The title, the name and role beside
+  the photo, the lede and the body all come from input_about_legal/about.md,
+  and the photo is whichever image sits next to it in that folder. See
+  lib/statics.js.
+#}
+
+<div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+  <header class="section-header">
+    <p class="section-header__kicker">Site</p>
+    <h1 class="section-header__title" aria-label="{{ statics.about.title }}">
+      {{ statics.about.title | animateTitle | safe }}
+    </h1>
+    {% if statics.about.description %}
+      <p class="section-header__meta">{{ statics.about.description }}</p>
+    {% endif %}
+  </header>
+
+  {% if statics.about.missing %}
+
+    <div class="empty-state empty-state--large">
+      <p>No <code>about.md</code> found in <code>{{ statics.dirName }}/</code>.</p>
+      <p>Put one there and build again.</p>
+    </div>
+
+  {% else %}
+
+    <section class="about-profile">
+      {% if statics.avatar %}
+        <div class="about-photo-wrap">
+          {# Same anchor shape as media.njk, so base.njk's `.glightbox` selector
+             picks it up with no change to the init. #}
+          <a href="{{ (statics.mediaUrl + '/' + statics.avatar) | rel }}"
+             class="about-photo-link glightbox"
+             data-gallery="about"
+             data-title="{{ statics.about.imageAlt }}">
+            <img class="about-photo"
+                 src="{{ (statics.mediaUrl + '/' + statics.avatar) | rel }}"
+                 alt="{{ statics.about.imageAlt }}"
+                 loading="eager" decoding="async">
+          </a>
+        </div>
+      {% endif %}
+
+      <div class="about-bio">
+        {% if statics.about.name %}<p class="about-name">{{ statics.about.name }}</p>{% endif %}
+        {% if statics.about.role %}<p class="about-role">{{ statics.about.role }}</p>{% endif %}
+        {% if statics.about.intro %}<p class="about-intro">{{ statics.about.intro }}</p>{% endif %}
+      </div>
+    </section>
+
+    <div class="prose max-w-none about-body">
+      {{ statics.about.body | markdown(statics.mediaUrl, statics.about.file) | safe }}
+    </div>
+
+  {% endif %}
+
+</div>

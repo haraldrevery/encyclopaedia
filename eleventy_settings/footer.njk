@@ -1,0 +1,28 @@
+<footer class="py-16">
+  <div class="page-container">
+    <div class="flex flex-col items-center text-center space-y-4">
+      <p class="font-mono text-black dark:text-white leading-none text-base uppercase tracking-widest">
+        {{ site.name }}
+      </p>
+      <div class="flex text-gray-600 dark:text-gray-300 flex-wrap justify-center items-center gap-2
+                  text-sm uppercase tracking-widest font-mono opacity-70">
+        {#- Back to top is not in the configurable list: it is a control, not a
+            destination, and it belongs to the footer rather than to the site. #}
+        <a href="#main" class="hover:opacity-60 transition-opacity">↑ Back to top</a>
+        {#- site_settings.json's footerLinks — its own list, separate from nav,
+            because the footer has always carried more than the bar does. -#}
+        {%- for link in site.footerLinks %}
+        <span class="text-gray-400">|</span>
+        <a href="{{ link.link | rel }}" class="hover:opacity-60 transition-opacity"{% if link.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ link.label }}</a>
+        {%- endfor %}
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-300 opacity-50 font-mono">
+        {{ library.stats.entries }} {{ "entry" if library.stats.entries == 1 else "entries" }} ·
+        {{ library.stats.variants }} {{ "document" if library.stats.variants == 1 else "documents" }}
+      </p>
+      <p class="text-sm text-gray-600 dark:text-gray-300 opacity-50 font-mono">
+        Built <time datetime="{{ library.stats.buildDate | isoDate }}">{{ library.stats.buildDate | readableDate }}</time>
+      </p>
+    </div>
+  </div>
+</footer>

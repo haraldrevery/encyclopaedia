@@ -1,0 +1,116 @@
+{#
+  nav.njk — search, wordmark, site links, mobile menu.
+
+  No breadcrumb. The path is a property of the page, not of the chrome, so it
+  is rendered in the page body by breadcrumb.njk — once, where the reader is
+  looking, instead of three times in a bar they have already scrolled past.
+#}
+
+{#
+  The search box, rendered twice: once in the desktop bar, once inside the
+  mobile menu. Everything that differs between the two is CSS.
+
+  Three attributes carry the whole design:
+
+    action     never used — javascript/search.js calls preventDefault. It is
+               what happens if the script 404s while JavaScript is ON, where
+               the noscript rule below would not fire: Enter still lands on
+               the full index instead of doing nothing at all.
+    data-index where the index is, relative to THIS page. Not fetched until
+               the box is first focused, so a reader who never searches never
+               downloads it.
+    data-root  how far up this page sits. The index holds root-relative URLs
+               because one copy of it serves pages at every depth; the script
+               joins the two back together.
+#}
+{%- macro searchBox(id, extraClass) -%}
+<form class="nav-search {{ extraClass }}" role="search"
+      action="{{ '/page/all.html' | rel }}"
+      data-index="{{ '/assets/search-index.js' | rel }}"
+      data-root="{{ '/' | rel }}"
+      data-all="{{ '/page/all.html' | rel }}">
+  <input type="search" class="nav-search__input" name="q"
+         placeholder="Search" aria-label="Search entries"
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+         role="combobox" aria-expanded="false" aria-autocomplete="list"
+         aria-controls="{{ id }}" aria-haspopup="listbox">
+  <div class="nav-search__panel" hidden>
+    <ul class="nav-search__results" id="{{ id }}" role="listbox" aria-label="Search results"></ul>
+  </div>
+</form>
+{%- endmacro -%}
+
+{#
+  One nav link, from site_settings.json's `nav` list.
+
+  The href goes through the `rel` filter like every other URL on the site, so a
+  site-absolute link ("/page/all.html") is rewritten relative to whatever page
+  is being written. relTo() passes an http(s):// link through untouched, which
+  is what makes an external entry in the list work — `external` is decided once
+  in lib/site.js so both call sites agree.
+#}
+{%- macro navLink(link, extraClass) -%}
+{%- if extraClass -%}
+<a href="{{ link.link | rel }}" class="{{ extraClass }}"{% if link.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ link.label }}</a>
+{%- else -%}
+<a href="{{ link.link | rel }}"{% if link.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ link.label }}</a>
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+  Both boxes are hidden by the stylesheet and revealed only once the inline
+  one-liner in base.njk's <head> has marked the document as scripted. With
+  JavaScript off, neither exists to the reader and the nav is exactly what it
+  was before search: Home, the full index, and Ctrl+F over it.
+#}
+{# nav-reveal goes on THIS element only, never on the mobile menu's inner <nav>
+   below: the class drives a transform, and putting it on both would drag the
+   open menu off-screen with the bar. #}
+<nav class="main-nav{% if isHome %} nav-reveal{% endif %} fixed top-0 inset-x-0 z-[200] backdrop-blur-xl
+            border-b border-zinc-200 bg-white/85
+            dark:border-white/10 dark:bg-neutral-950/90">
+  <div class="page-container nav-desktop:h-13 h-18 flex items-center justify-between gap-4 relative">
+
+    {# nav-optical on the three children below, never on the row: it is the
+       single tuning knob for how high the mono face sits in the bar. See
+       --nav-text-offset in theme.css. #}
+    <a href="{{ '/index.html' | rel }}" class="group flex items-center gap-2 shrink-0 nav-optical">
+      <span class="font-mono text-nav tracking-brand md:tracking-brand-wide uppercase leading-none
+                   text-neutral-900 dark:text-white
+                   group-hover:text-neutral-500 dark:group-hover:text-neutral-300 transition-colors">
+        {{ site.shortName }}
+      </span>
+    </a>
+
+    <div class="hidden nav-desktop:flex items-center gap-5 font-mono text-[1.05rem] uppercase
+                tracking-nav text-neutral-500 dark:text-neutral-400 shrink-0 nav-optical">
+      {{ searchBox("nav-search-results") }}
+      {%- for link in site.nav %}
+      {{ navLink(link, "hover:text-neutral-900 dark:hover:text-white transition-colors") }}
+      {%- endfor %}
+    </div>
+
+    {# CSS-only mobile menu: a checkbox and sibling selectors, no JavaScript. #}
+    <input type="checkbox" id="mobile-menu-toggle" class="hidden peer">
+    <label for="mobile-menu-toggle"
+           class="nav-desktop:hidden z-[250] cursor-pointer p-4 -mr-4 group select-none nav-optical"
+           aria-label="Toggle menu">
+      <span class="menu-icon-text font-mono text-nav uppercase leading-none
+                   text-neutral-900 dark:text-white"></span>
+    </label>
+
+    <div class="mobile-menu fixed inset-0 flex items-center justify-center min-h-screen w-screen z-[210]
+                opacity-0 pointer-events-none -translate-y-full
+                bg-white/98 dark:bg-neutral-950/98 backdrop-blur-3xl
+                peer-checked:opacity-100 peer-checked:pointer-events-auto peer-checked:translate-y-0
+                transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
+      <nav class="flex flex-col py-10 text-center gap-8 font-mono text-xl uppercase
+                  tracking-nav-menu text-neutral-900 dark:text-white">
+        {{ searchBox("nav-search-results-menu", "nav-search--menu") }}
+        {%- for link in site.nav %}
+        {{ navLink(link) }}
+        {%- endfor %}
+      </nav>
+    </div>
+  </div>
+</nav>

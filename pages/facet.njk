@@ -1,0 +1,42 @@
+---
+pagination:
+  data: library.facetPages
+  size: 1
+  alias: item
+permalink: "{{ item.permalink }}"
+layout: base.njk
+pageKind: facet
+---
+{#
+  facet.njk — one folder filtered to a single category or tag.
+
+  Filters the folder's whole subtree, so a tag clicked on a top-level section
+  finds matching documents however deeply they are nested.
+#}
+{% from "breadcrumb.njk" import renderCrumbs %}
+{% from "card-grid.njk" import renderCards %}
+{% from "filter-bar.njk" import renderFilters %}
+{% from "pagination.njk" import renderPagination %}
+
+<div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+  <header class="section-header">
+    {{ renderCrumbs(crumbs, item.facet.kind, page.url, "site-breadcrumb--kicker") }}
+    <h1 class="section-header__title">{{ item.facet.value | animateTitle | safe }}</h1>
+    <p class="section-header__meta">
+      {{ item.totalItems }} {{ "entry" if item.totalItems == 1 else "entries" }}
+      {%- if item.totalPages > 1 %} · page {{ item.pageNumber }} of {{ item.totalPages }}{% endif %}
+    </p>
+  </header>
+
+  {{ renderFilters(item.node, item.facet.kind, item.facet.value, page.url) }}
+
+  {{ renderCards(item.items, page.url) }}
+
+  {{ renderPagination(item, page.url) }}
+
+  <p class="back-link">
+    <a href="{{ item.node.url | rel }}">← Back to {{ item.node.label }}</a>
+  </p>
+
+</div>

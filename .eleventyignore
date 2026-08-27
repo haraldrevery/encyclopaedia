@@ -1,0 +1,5 @@
+node_modules/**
+content/**
+eleventy_binary/**
+README.md
+*.md

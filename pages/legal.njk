@@ -1,0 +1,39 @@
+---
+permalink: /legal.html
+layout: base.njk
+pageTitle: Legal
+pageDescription: Copyright, licensing, third-party components and disclaimer.
+---
+{#
+  legal.njk — about.njk without the portrait. Text comes from
+  input_about_legal/legal.md; see lib/statics.js.
+#}
+
+<div class="page-container pt-28 nav-desktop:pt-[5.6rem] pb-16 extra_fade_effect">
+
+  <header class="section-header">
+    <p class="section-header__kicker">Site</p>
+    <h1 class="section-header__title" aria-label="{{ statics.legal.title }}">
+      {{ statics.legal.title | animateTitle | safe }}
+    </h1>
+    {% if statics.legal.description %}
+      <p class="section-header__meta">{{ statics.legal.description }}</p>
+    {% endif %}
+  </header>
+
+  {% if statics.legal.missing %}
+
+    <div class="empty-state empty-state--large">
+      <p>No <code>legal.md</code> found in <code>{{ statics.dirName }}/</code>.</p>
+      <p>Put one there and build again.</p>
+    </div>
+
+  {% else %}
+
+    <div class="prose max-w-none legal-body">
+      {{ statics.legal.body | markdown(statics.mediaUrl, statics.legal.file) | safe }}
+    </div>
+
+  {% endif %}
+
+</div>
