@@ -1,0 +1,14 @@
+{
+  "types": {
+    "title": "text",
+    "source": "text",
+    "author": "text",
+    "published": "date",
+    "created": "date",
+    "description": "text",
+    "tags": "multitext",
+    "date": "text",
+    "version": "text",
+    "category": "text"
+  }
+}
