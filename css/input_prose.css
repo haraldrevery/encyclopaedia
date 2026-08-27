@@ -300,6 +300,13 @@
   font-size: 0.85rem;
   color: #525252;
 }
+/* h4 appears in the outline because demoteHeadings() pushes a document's own
+   h3 sections down a level whenever its body opens with an h1. */
+.article-outline-item--h4 a {
+  padding-left: 2.85rem;
+  font-size: 0.8rem;
+  color: #737373;
+}
 .article-outline-panel a:hover { color: #171717; border-left-color: #171717; }
 
 /* Stop an in-page jump from parking the heading under the fixed nav. */
@@ -316,6 +323,7 @@
   .article-outline-heading { color: #a3a3a3; }
   .article-outline-panel a { color: #d4d4d4; }
   .article-outline-item--h3 a { color: #a3a3a3; }
+  .article-outline-item--h4 a { color: #8f8f8f; }
   .article-outline-panel a:hover { color: #ffffff; border-left-color: #ffffff; }
 }
 

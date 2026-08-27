@@ -10,7 +10,9 @@
     "start": "eleventy --serve --incremental",
     "css": "./tailwindcss-linux-x64 -i css/input.css -o css/main.css --content './pages/**/*.njk,./eleventy_settings/**/*.njk' --minify && ./tailwindcss-linux-x64 -i css/input_prose.css -o css/prose.css --content './pages/**/*.njk,./eleventy_settings/**/*.njk' --minify",
     "compile": "./eleventy_binary/compile.sh",
-    "check": "./healthcheck.sh"
+    "check": "./healthcheck.sh",
+    "test": "node test/report.mjs",
+    "test:watch": "node --test --watch test/*.test.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "^3.1.2",

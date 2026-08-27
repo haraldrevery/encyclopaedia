@@ -407,6 +407,80 @@ pageDescription: What the generator produced, what it had to guess, and what it 
     {% endif %}
   </section>
 
+  {# ── Demoted headings ─────────────────────────────────────────────────── #}
+  {% set sev = report.severity.demoted %}
+  {% set demoted = health.demoted or [] %}
+  <section class="health-section" id="demoted">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if demoted.length }}">
+      {% if demoted.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Demoted headings
+    </h2>
+    {% if demoted.length %}
+      <p class="health-section__lede">
+        The page already prints its title as the top heading, so an
+        <code>h1</code> in the body would be a second one. These were shifted
+        down a level, along with the headings under them. Nothing was lost — but
+        where the two titles disagree, only you can say which is right.
+      </p>
+      <ul class="health-list">
+        {% for row in demoted %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, "", page.url) }}
+            <span class="health-item__note">
+              {{ row.headings | join(" · ") }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">No document defines a second top-level heading.</p>
+    {% endif %}
+  </section>
+
+  {# ── Generator tests ──────────────────────────────────────────────────────
+     Everything above is about the content. This is about the generator that
+     built it: the result of the last `npm test`, read from test/results.json
+     rather than run, because the build must not depend on Node being present.
+  #}
+  {% set tests = library.tests %}
+  <section class="health-section" id="tests">
+    <h2 class="health-section__title{{ ' health-section__title--high' if tests.state == 'fail' }}{{ ' health-section__title--medium' if tests.state != 'pass' and tests.state != 'fail' }}">
+      {% if tests.state != 'pass' %}<span class="health-mark">{{ '!' if tests.state == 'fail' else '?' }}</span>{% endif %}Generator tests
+    </h2>
+
+    {% if tests.state == 'missing' %}
+      <p class="health-section__lede">
+        The test suite has not been run here. Run <code>npm test</code> to check
+        the generator itself — slug and URL building, front matter parsing,
+        heading levels and the metadata fallbacks.
+      </p>
+    {% elif tests.state == 'fail' %}
+      <p class="health-section__lede">
+        {{ tests.fail }} of {{ tests.total }} tests failed. The pages below were
+        still built, but a failing generator test means some of them may be
+        wrong in a way this report cannot see.
+      </p>
+      <ul class="health-list">
+        {% for row in tests.failures %}
+          <li class="health-item health-item--high">
+            {{ findingPath(row.file, "", page.url) }}
+            <span class="health-item__note">{{ row.name }} — {{ row.message }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% elif tests.state == 'stale' %}
+      <p class="health-section__lede">
+        All {{ tests.pass }} tests passed when they were last run, but
+        <code>lib/</code> has changed since. Run <code>npm test</code> again —
+        a green tick from before the last edit says nothing about this build.
+      </p>
+    {% else %}
+      <p class="health-ok">
+        All {{ tests.pass }} generator tests passed, across
+        {{ tests.files | length }} files.
+      </p>
+    {% endif %}
+  </section>
+
   <p class="health-footnote">
     Everything above is about <code>input_markdown/</code>. The About and Legal
     pages are site chrome and are counted but not diagnosed here.

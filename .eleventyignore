@@ -3,3 +3,4 @@ content/**
 eleventy_binary/**
 README.md
 *.md
+test/**

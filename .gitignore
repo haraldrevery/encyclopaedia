@@ -14,3 +14,7 @@ encyclopedia-linux-x64
 encyclopedia-win-x64.exe
 tailwindcss-linux-x64
 tw.exe
+
+# Test results, written by `npm test` and read back by the status page.
+# Generated, and stale the moment lib/ changes — so it is not tracked.
+test/results.json

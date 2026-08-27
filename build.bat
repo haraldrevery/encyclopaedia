@@ -11,7 +11,7 @@ if exist encyclopedia-win-x64.exe (
     encyclopedia-win-x64.exe %*
 ) else if exist node_modules\.bin\eleventy.cmd (
     echo encyclopedia-win-x64.exe not found - falling back to local Eleventy.
-    call node_modules\.bin\eleventy.cmd
+    call node_modules\.bin\eleventy.cmd %*
 ) else (
     echo Nothing to build with.
     echo Either compile the binary ^(eleventy_binary\compile.sh^) or run "npm install".

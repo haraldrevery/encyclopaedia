@@ -9,7 +9,7 @@ if [ -x ./encyclopedia-linux-x64 ]; then
     ./encyclopedia-linux-x64 "$@"
 elif [ -x ./node_modules/.bin/eleventy ]; then
     echo "encyclopedia-linux-x64 not found — falling back to local Eleventy."
-    ./node_modules/.bin/eleventy
+    ./node_modules/.bin/eleventy "$@"
 else
     echo "Nothing to build with." >&2
     echo "Either compile the binary (eleventy_binary/compile.sh) or run 'npm install'." >&2
