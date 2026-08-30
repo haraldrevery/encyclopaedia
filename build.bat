@@ -7,6 +7,13 @@ REM and falls back to npx eleventy if it isn't.
 REM ---------------------------------------------------------------------------
 cd /d "%~dp0"
 
+REM Which bundle the generator will write to, worked out the way it works it
+REM out: first argument, else ENCYCLOPEDIA_BUNDLE, else content. The closing
+REM message used to say "content\index.html" whatever was built.
+set "BUNDLE=content"
+if defined ENCYCLOPEDIA_BUNDLE set "BUNDLE=%ENCYCLOPEDIA_BUNDLE%"
+if not "%~1"=="" if not "%~1"=="--quiet" set "BUNDLE=%~1"
+
 if exist encyclopedia-win-x64.exe (
     encyclopedia-win-x64.exe %*
 ) else if exist node_modules\.bin\eleventy.cmd (
@@ -22,7 +29,7 @@ set RC=%ERRORLEVEL%
 
 if "%RC%"=="0" (
     echo.
-    echo Done. Open content\index.html in a browser.
+    echo Done. Open %BUNDLE%\index.html in a browser.
     echo Then run healthcheck.bat to check links and file sizes.
 )
 

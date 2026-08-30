@@ -17,9 +17,10 @@
 const fs = require("fs");
 
 const { relTo, slugify, humanise, fnv1a } = require("./lib/paths");
+const { escapeHtml } = require("./lib/html");
 const markdown = require("./lib/markdown");
 const { UNKNOWN } = require("./lib/normalise");
-const { bundleOutputDir } = require("./lib/bundle");
+const { bundleOutputDir, markdownDir } = require("./lib/bundle");
 const buildLibrary = require("./lib/library");
 const buildStatics = require("./lib/statics");
 const { buildSearchIndex } = require("./lib/search");
@@ -94,7 +95,10 @@ module.exports = function (eleventyConfig) {
 
   eleventyConfig.addWatchTarget("./lib/");
   eleventyConfig.addWatchTarget("./site_settings.json");
-  eleventyConfig.addWatchTarget("./content/input_markdown/");
+  // markdownDir(), not "./content/input_markdown/": the bundle is selectable
+  // (ENCYCLOPEDIA_BUNDLE / `encyclopedia <folder>`), and a hardcoded path meant
+  // `npm start` on any other bundle watched a folder the build never read.
+  eleventyConfig.addWatchTarget(markdownDir());
   eleventyConfig.addWatchTarget("./input_about_legal/");
 
   // ── Links ─────────────────────────────────────────────────────────────────
@@ -259,10 +263,3 @@ function scatterDelay(seed, spread) {
   return ((fnv1a(seed) % range) / 100 + MIN_DELAY).toFixed(2);
 }
 
-function escapeHtml(value) {
-  return String(value == null ? "" : value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}

@@ -46,13 +46,18 @@ if not exist encyclopedia-win-x64.exe (
 echo No node_modules - using encyclopedia-win-x64.exe. No live reload.
 encyclopedia-win-x64.exe || (pause & exit /b 1)
 
+REM lib\bundle.js reads the same variable, so the server and the build cannot
+REM end up pointed at two different folders.
+set "BUNDLE=content"
+if defined ENCYCLOPEDIA_BUNDLE set "BUNDLE=%ENCYCLOPEDIA_BUNDLE%"
+
 if not defined PORT set PORT=8080
 where python >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo python not found - no server. Open content\index.html directly.
+    echo python not found - no server. Open %BUNDLE%\index.html directly.
 ) else (
-    start "Encyclopedia server" cmd /c "python -m http.server %PORT% --directory content --bind 127.0.0.1"
+    start "Encyclopedia server" cmd /c "python -m http.server %PORT% --directory "%BUNDLE%" --bind 127.0.0.1"
     echo.
     echo Serving http://127.0.0.1:%PORT%/
 )

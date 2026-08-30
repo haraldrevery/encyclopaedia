@@ -4,6 +4,7 @@ healthcheck.ps1 - report-only sanity scan of the built site.
 
   .\healthcheck.ps1            full report
   .\healthcheck.ps1 -Quiet     only sections that found something
+  .\healthcheck.ps1 C:\Notes  check a bundle somewhere else
   .\healthcheck.ps1 -Help      usage and current thresholds
 
 The Windows twin of healthcheck.sh. Same scope, same thresholds, same
@@ -22,6 +23,11 @@ Requires PowerShell 5.1 or later.
 
 [CmdletBinding()]
 param(
+    # The folder holding input_markdown/. Mirrors healthcheck.sh: the generator
+    # can be pointed at another bundle, and checking 'content' regardless meant
+    # reporting on the wrong folder.
+    [Parameter(Position = 0)]
+    [string]$Bundle,
     [switch]$Quiet,
     [switch]$Help
 )
@@ -41,12 +47,25 @@ $THUMB_MAX_KB    = Get-Threshold 'THUMB_MAX_KB'    150
 $PAGE_IMG_MAX_KB = Get-Threshold 'PAGE_IMG_MAX_KB' 8000
 
 # --- scope -------------------------------------------------------------------
-$SITE_DIR  = 'content'
-$MEDIA_DIR = 'content\input_markdown'
-$CSS_FILES = @('content\assets\main.css', 'content\assets\prose.css')
+# Argument, then environment, then the default - the same order of precedence
+# the generator itself uses.
+$DEFAULT_BUNDLE = 'content'
+$SITE_DIR = if ($Bundle) { $Bundle }
+            elseif ($env:ENCYCLOPEDIA_BUNDLE) { $env:ENCYCLOPEDIA_BUNDLE }
+            else { $DEFAULT_BUNDLE }
+$SITE_DIR  = $SITE_DIR.TrimEnd('\', '/')
+$MEDIA_DIR = Join-Path $SITE_DIR 'input_markdown'
+$CSS_FILES = @((Join-Path $SITE_DIR 'assets\main.css'), (Join-Path $SITE_DIR 'assets\prose.css'))
+
+# What a site-absolute reference ("/assets/main.css") resolves against. An
+# absolute bundle must not get '.\' glued to the front - the same trap
+# healthcheck.sh has in norm_path/SITE_ROOT.
+$SITE_ROOT = if ([System.IO.Path]::IsPathRooted($SITE_DIR)) { $SITE_DIR }
+             else { Join-Path '.' $SITE_DIR }
 
 if ($Help) {
-    Write-Host "usage: healthcheck.ps1 [-Quiet]`n"
+    Write-Host "usage: healthcheck.ps1 [-Quiet] [bundle]`n"
+    Write-Host "  bundle   the folder holding input_markdown\ (default: $DEFAULT_BUNDLE)"
     Write-Host "  -Quiet   print only the sections that found something"
     Write-Host "  -Help    this message`n"
     Write-Host "Thresholds can be overridden from the environment:"
@@ -258,7 +277,7 @@ foreach ($r in $refs) {
     $clean = [uri]::UnescapeDataString($clean)
 
     if ($clean.StartsWith('/')) {
-        $path = Join-Path (Join-Path '.' $SITE_DIR) $clean.TrimStart('/')
+        $path = Join-Path $SITE_ROOT $clean.TrimStart('/')
     } else {
         $path = Join-Path (Split-Path -Parent $r.File) $clean
     }
@@ -321,7 +340,7 @@ foreach ($r in $cardRefs) {
     $clean = [uri]::UnescapeDataString($clean)
 
     if ($clean.StartsWith('/')) {
-        $path = Join-Path (Join-Path '.' $SITE_DIR) $clean.TrimStart('/')
+        $path = Join-Path $SITE_ROOT $clean.TrimStart('/')
     } else {
         $path = Join-Path (Split-Path -Parent $r.File) $clean
     }
@@ -351,7 +370,7 @@ foreach ($r in $imgRefs) {
     $clean = [uri]::UnescapeDataString($clean)
 
     if ($clean.StartsWith('/')) {
-        $path = Join-Path (Join-Path '.' $SITE_DIR) $clean.TrimStart('/')
+        $path = Join-Path $SITE_ROOT $clean.TrimStart('/')
     } else {
         $path = Join-Path (Split-Path -Parent $r.File) $clean
     }
@@ -397,10 +416,10 @@ Write-Host ""
 Write-Host "---"
 if ($script:errors -gt 0 -or $script:warnings -gt 0) {
     Write-Host ("{0} error(s), {1} warning(s)" -f $script:errors, $script:warnings)
-    Write-Host "content\page\ and content\index.html are build output - fix findings there"
-    Write-Host "in content\input_markdown\, pages\ or eleventy_settings\, then rebuild."
+    Write-Host "$SITE_DIR\page\ and $SITE_DIR\index.html are build output - fix findings there"
+    Write-Host "in $MEDIA_DIR\, pages\ or eleventy_settings\, then rebuild."
     Write-Host "Missing media usually means a markdown file names a file that is not beside it."
-    Write-Host "For metadata problems see content\page\status.html."
+    Write-Host "For metadata problems see $SITE_DIR\page\status.html."
 } else {
     Write-Host "All checks passed." -ForegroundColor Green
 }

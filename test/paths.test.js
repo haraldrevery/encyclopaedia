@@ -1,6 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { slugify, uniqueSlug, encodeSegment, relTo, isMarkdown, isImage } = require("../lib/paths");
+const {
+  slugify, uniqueSlug, encodeSegment, relTo, isMarkdown, isImage, classifyFiles,
+} = require("../lib/paths");
 
 test("slugify never returns an empty string", () => {
   for (const input of ["", null, undefined, "---", "!!!", "   "]) {
@@ -59,4 +61,60 @@ test("relTo produces a path relative to the page", () => {
 test("extension helpers are case-insensitive", () => {
   assert.ok(isMarkdown("A.MD"));
   assert.ok(isImage("photo.JPG"));
+});
+
+// ── classifyFiles ───────────────────────────────────────────────────────────
+// The partition is the one thing standing between a file and silent deletion
+// from the site, so the property that matters is tested directly rather than
+// through any single example.
+
+/** Every bucket, flattened — what the site can still see. */
+const accountedFor = (k) =>
+  [...k.markdown, ...(k.thumbnail ? [k.thumbnail] : []),
+   ...k.images, ...k.videos, ...k.audios, ...k.downloads];
+
+test("classifyFiles accounts for every file exactly once", () => {
+  const files = [
+    "note.md", "thumbnail.jpg", "a.jpg", "clip.mp4", "song.mp3", "data.zip",
+    "thumbnail.mp4", "thumbnail.txt", "thumbnail.md", "no-extension",
+    "UPPER.PNG", "archive.tar.gz",
+  ];
+  const seen = accountedFor(classifyFiles(files));
+  assert.deepStrictEqual([...seen].sort(), [...files].sort());
+  assert.strictEqual(seen.length, new Set(seen).size, "a file landed in two buckets");
+});
+
+test("classifyFiles only lets an IMAGE become the card image", () => {
+  // The bug this partition exists to prevent: a thumbnail.* that is not an
+  // image used to be claimed as the card thumbnail and then vanish from every
+  // media list, from the health report, and from the site.
+  assert.strictEqual(classifyFiles(["thumbnail.jpg"]).thumbnail, "thumbnail.jpg");
+
+  for (const [file, bucket] of [
+    ["thumbnail.mp4", "videos"], ["thumbnail.mp3", "audios"],
+    ["thumbnail.txt", "downloads"], ["thumbnail.md", "markdown"],
+  ]) {
+    const kinds = classifyFiles([file]);
+    assert.strictEqual(kinds.thumbnail, null, `${file} was claimed as the card image`);
+    assert.deepStrictEqual(kinds[bucket], [file], `${file} should be a ${bucket} entry`);
+  }
+});
+
+test("classifyFiles keeps the card image out of the gallery", () => {
+  const kinds = classifyFiles(["thumbnail.jpg", "a.jpg", "b.jpg"]);
+  assert.strictEqual(kinds.thumbnail, "thumbnail.jpg");
+  assert.deepStrictEqual(kinds.images, ["a.jpg", "b.jpg"]);
+});
+
+test("classifyFiles sends an unrecognised extension to downloads, never nowhere", () => {
+  const kinds = classifyFiles(["mystery.qqq", "no-extension"]);
+  assert.deepStrictEqual(kinds.downloads, ["mystery.qqq", "no-extension"]);
+});
+
+test("classifyFiles handles an empty or missing list", () => {
+  for (const input of [[], null, undefined]) {
+    const kinds = classifyFiles(input);
+    assert.strictEqual(kinds.thumbnail, null);
+    assert.strictEqual(accountedFor(kinds).length, 0);
+  }
 });

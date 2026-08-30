@@ -12,6 +12,13 @@
 # ---------------------------------------------------------------------------
 cd "$(dirname "$0")" || exit 1
 
+# The bundle the generator reads and writes. lib/bundle.js reads the same
+# variable, so the server, the watch list and the build cannot end up pointed
+# at three different folders.
+DEFAULT_BUNDLE="content"
+BUNDLE="${ENCYCLOPEDIA_BUNDLE:-$DEFAULT_BUNDLE}"
+BUNDLE="${BUNDLE%/}"
+
 TW=$(ls tailwindcss-linux-* 2>/dev/null | head -n 1)
 if [ -z "$TW" ]; then
     echo "No tailwindcss-linux-* binary found - CSS will not rebuild." >&2
@@ -57,20 +64,20 @@ echo "refresh the browser yourself after a change."
 
 PORT=${PORT:-8080}
 if command -v python3 >/dev/null 2>&1; then
-    python3 -m http.server "$PORT" --directory content --bind 127.0.0.1 &
+    python3 -m http.server "$PORT" --directory "$BUNDLE" --bind 127.0.0.1 &
     echo
     echo "Serving http://127.0.0.1:$PORT/  (Ctrl-C to stop)"
 else
     echo
-    echo "python3 not found - no server. Open content/index.html directly."
+    echo "python3 not found - no server. Open $BUNDLE/index.html directly."
 fi
 
 # Poll instead of inotifywait, which is not installed everywhere. Only sources
-# are watched: the binary writes into content/ but never into input_markdown/,
-# so a build cannot retrigger itself.
+# are watched: the binary writes into the bundle but never into its
+# input_markdown/, so a build cannot retrigger itself.
 STAMP=$(mktemp) || exit 1
 trap 'rm -f "$STAMP"; kill 0' EXIT INT TERM
-WATCH="pages eleventy_settings lib eleventy.config.js content/input_markdown"
+WATCH="pages eleventy_settings lib eleventy.config.js $BUNDLE/input_markdown"
 # The inputs that live outside those folders. Eleventy's own dev server
 # watches these through addWatchTarget in eleventy.config.js, but this
 # fallback loop has its own list and would otherwise sit there while an

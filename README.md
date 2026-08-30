@@ -315,20 +315,25 @@ Run after building. Checks the finished HTML for:
   over 850 kB, and pages carrying more than 8 MB of images
 
 ```
-./healthcheck.sh              full report
-./healthcheck.sh --quiet      only what it found
-./healthcheck.sh --help       usage and current thresholds
+./healthcheck.sh                    full report on content/
+./healthcheck.sh --quiet            only what it found
+./healthcheck.sh ~/Notes/Cooking    check a bundle somewhere else
+./healthcheck.sh --help             usage and current thresholds
 ```
+
+The bundle is chosen the same way the generator chooses it: the argument, then
+`ENCYCLOPEDIA_BUNDLE`, then `content/`. So `./build.sh ~/Notes/Cooking` and
+`./healthcheck.sh ~/Notes/Cooking` are a pair, and neither has to be told twice.
 
 Thresholds are environment variables: `THUMB_MAX_KB=80 ./healthcheck.sh`.
 It never writes, moves or deletes anything, and it exits
 
 - `0` clean, or warnings only
 - `1` errors found
-- `2` it could not check — bad usage, or `content/` holds no built pages
+- `2` it could not check — bad usage, or the bundle holds no built pages
 
-so it can gate a deploy. Note the last one: a `content/` that exists but is
-empty means the site was never built, and that is reported rather than passed.
+so it can gate a deploy. Note the last one: a bundle that exists but is empty
+means the site was never built, and that is reported rather than passed.
 
 ---
 
@@ -591,9 +596,11 @@ copes.
 - `healthcheck.sh` needs bash 4+ and GNU `stat`, so it runs on Linux but not on
   a stock macOS. Use `healthcheck.ps1` on Windows.
 - Markdown is trusted. Front matter can no longer execute code — only YAML is
-  accepted, and a `---js` header is refused and reported — but raw HTML in a
-  document body is still passed through to the page, so building a folder
-  somebody else wrote means trusting what is in it.
+  accepted, and a `---js` header is refused, reported, and kept out of the
+  rendered body — but raw HTML in a document body is still passed through to
+  the page, so building a folder somebody else wrote means trusting what is in
+  it. Filenames are a separate matter and are escaped: a file can be named
+  anything at all without its name becoming markup.
 - The homepage lists every category in the whole project. On a very large,
   very varied collection that is a long row of pills.
 - A folder only publishes a tag or category page where that facet actually

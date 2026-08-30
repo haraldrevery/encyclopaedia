@@ -2,9 +2,10 @@
 # ---------------------------------------------------------------------------
 # healthcheck.sh - report-only sanity scan of the built site.
 #
-#   ./healthcheck.sh            full report
-#   ./healthcheck.sh --quiet    only sections that found something
-#   ./healthcheck.sh --help     usage and current thresholds
+#   ./healthcheck.sh                 full report on ./content
+#   ./healthcheck.sh --quiet         only sections that found something
+#   ./healthcheck.sh ~/Notes/Cook    check a bundle somewhere else
+#   ./healthcheck.sh --help          usage and current thresholds
 #
 # Checks:
 #   A. broken references  - src/href/poster/srcset in HTML, url() in CSS
@@ -28,7 +29,7 @@
 # This script never writes, moves or deletes anything.
 #   exit 0  clean (or warnings only)
 #   exit 1  errors found
-#   exit 2  cannot check - bad usage, or content/ holds no built pages
+#   exit 2  cannot check - bad usage, or the bundle holds no built pages
 # ---------------------------------------------------------------------------
 
 cd "$(dirname "$0")" || exit 2
@@ -43,12 +44,13 @@ PAGE_IMG_MAX_KB=${PAGE_IMG_MAX_KB:-8000}
 # The built site is content/. Everything under content/page/ is generated, at
 # any depth, so this walks recursively rather than listing pages by hand the
 # way the reference site does - here the page set is not knowable in advance.
-SITE_DIR="content"
-CSS_FILES="content/assets/main.css content/assets/prose.css"
-
-# Media lives in content/input_markdown/ and is linked, never copied - so it
-# IS in scope for size budgets: an oversized image there still ships.
-MEDIA_DIR="content/input_markdown"
+# WHICH bundle is not fixed. The generator can be pointed at another one
+# (`./build.sh ~/Notes/Cooking`, or ENCYCLOPEDIA_BUNDLE), and this script used
+# to check ./content regardless - so the workflow its own --help recommends
+# silently reported on the wrong folder, or refused the path outright. Same
+# order of precedence the generator uses: argument, environment, default.
+BUNDLE_ARG=""            # filled in by the argument parser below
+DEFAULT_BUNDLE="content"
 
 # --- output helpers --------------------------------------------------------
 if [ -t 1 ]; then
@@ -58,26 +60,52 @@ else
 fi
 
 QUIET=0
-case "$1" in
-    '')        ;;
-    --quiet)   QUIET=1 ;;
-    -h|--help)
-        printf 'usage: %s [--quiet]\n\n' "${0##*/}"
-        printf '  --quiet   print only the sections that found something\n'
-        printf '  --help    this message\n\n'
-        printf 'Thresholds can be overridden from the environment:\n'
-        printf '  IMG_MAX_KB=%s  SVG_MAX_KB=%s  THUMB_MAX_KB=%s  PAGE_IMG_MAX_KB=%s\n' \
-               "$IMG_MAX_KB" "$SVG_MAX_KB" "$THUMB_MAX_KB" "$PAGE_IMG_MAX_KB"
-        exit 0 ;;
-    *)
-        printf '%s: unknown option "%s"\nusage: %s [--quiet]\n' \
-               "${0##*/}" "$1" "${0##*/}" >&2
-        exit 2 ;;
+usage() {
+    printf 'usage: %s [--quiet] [bundle]\n\n' "${0##*/}"
+    printf '  bundle    the folder holding input_markdown/ (default: %s)\n' "$DEFAULT_BUNDLE"
+    printf '  --quiet   print only the sections that found something\n'
+    printf '  --help    this message\n'
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --quiet)   QUIET=1 ;;
+        -h|--help)
+            usage
+            printf '\nThresholds can be overridden from the environment:\n'
+            printf '  IMG_MAX_KB=%s  SVG_MAX_KB=%s  THUMB_MAX_KB=%s  PAGE_IMG_MAX_KB=%s\n' \
+                   "$IMG_MAX_KB" "$SVG_MAX_KB" "$THUMB_MAX_KB" "$PAGE_IMG_MAX_KB"
+            exit 0 ;;
+        -*)
+            printf '%s: unknown option "%s"\n' "${0##*/}" "$1" >&2
+            usage >&2
+            exit 2 ;;
+        *)
+            if [ -n "$BUNDLE_ARG" ]; then
+                printf '%s: only one bundle can be checked at a time\n' "${0##*/}" >&2
+                usage >&2
+                exit 2
+            fi
+            BUNDLE_ARG="$1" ;;
+    esac
+    shift
+done
+
+SITE_DIR="${BUNDLE_ARG:-${ENCYCLOPEDIA_BUNDLE:-$DEFAULT_BUNDLE}}"
+SITE_DIR="${SITE_DIR%/}"
+CSS_FILES="$SITE_DIR/assets/main.css $SITE_DIR/assets/prose.css"
+
+# Media lives in <bundle>/input_markdown/ and is linked, never copied - so it
+# IS in scope for size budgets: an oversized image there still ships.
+MEDIA_DIR="$SITE_DIR/input_markdown"
+
+# What a site-absolute reference ("/assets/main.css") is resolved against.
+# "./$SITE_DIR" is right for a relative bundle and wrong for an absolute one -
+# "./" glued to the front of /home/... names nothing.
+case "$SITE_DIR" in
+    /*) SITE_ROOT="$SITE_DIR" ;;
+    *)  SITE_ROOT="./$SITE_DIR" ;;
 esac
-if [ $# -gt 1 ]; then
-    printf '%s: too many arguments\nusage: %s [--quiet]\n' "${0##*/}" "${0##*/}" >&2
-    exit 2
-fi
 
 if [ ! -d "$SITE_DIR" ]; then
     printf '%s: %s/ not found - build the site first.\n' "${0##*/}" "$SITE_DIR" >&2
@@ -241,7 +269,13 @@ resolve_ci() {
 # the same file by different routes compare equal. Pure builtins, no fork: the
 # same reason resolve_ci walks components by hand.
 norm_path() {
-    local rest=$1 seg out=
+    local rest=$1 seg out= lead=
+    # An absolute path has to stay absolute. Stripping the leading slash was
+    # harmless while the bundle was always the relative "content", and silently
+    # wrong the moment one could be given by path: every card image resolved to
+    # a relative path that did not exist, so the whole card-image budget check
+    # found nothing and reported nothing.
+    case $rest in /*) lead=/ ;; esac
     while [ -n "$rest" ]; do
         seg=${rest%%/*}
         if [ "$seg" = "$rest" ]; then rest=; else rest=${rest#*/}; fi
@@ -251,7 +285,7 @@ norm_path() {
             *)    out=$out/$seg ;;
         esac
     done
-    printf '%s\n' "${out#/}"
+    printf '%s\n' "$lead${out#/}"
 }
 
 # URLs are percent-encoded in the HTML (folder names may contain spaces or
@@ -273,7 +307,7 @@ while IFS=$'\t' read -r f line url; do
     printf -v clean '%b' "${clean//%/\\x}"
 
     if [ "${clean#/}" != "$clean" ]; then
-        path="./${SITE_DIR}${clean}"   # site-absolute (shouldn't occur, but be safe)
+        path="${SITE_ROOT}${clean}"    # site-absolute (shouldn't occur, but be safe)
     else
         path="${f%/*}/${clean}"        # relative to the containing file
     fi
@@ -334,7 +368,7 @@ while IFS=$'\t' read -r cf cline curl; do
     c=${curl%%\#*}; c=${c%%\?*}
     [ -z "$c" ] && continue
     printf -v c '%b' "${c//%/\\x}"
-    if [ "${c#/}" != "$c" ]; then cp_="./${SITE_DIR}${c}"; else cp_="${cf%/*}/${c}"; fi
+    if [ "${c#/}" != "$c" ]; then cp_="${SITE_ROOT}${c}"; else cp_="${cf%/*}/${c}"; fi
     # Normalised before the dedupe, or the same image reached from two folder
     # depths counts twice and the list reads far worse than the truth.
     cp_=$(norm_path "$cp_")
@@ -374,7 +408,7 @@ while IFS=$'\t' read -r rf rline rurl; do
         *) continue ;;
     esac
     printf -v c '%b' "${c//%/\\x}"
-    if [ "${c#/}" != "$c" ]; then p="./${SITE_DIR}${c}"; else p="${rf%/*}/${c}"; fi
+    if [ "${c#/}" != "$c" ]; then p="${SITE_ROOT}${c}"; else p="${rf%/*}/${c}"; fi
 
     # stat() each distinct file once; the same image recurs on many pages.
     if [ -z "${file_size[$p]+set}" ]; then
@@ -409,10 +443,11 @@ section "$TMP/heavy"     "pages referencing over ${PAGE_IMG_MAX_KB} kB of images
 printf '\n%s---%s\n' "$DIM" "$RST"
 if [ "$errors" -gt 0 ] || [ "$warnings" -gt 0 ]; then
     printf '%d error(s), %d warning(s)\n' "$errors" "$warnings"
-    printf '%scontent/page/ and content/index.html are build output - fix findings there\n' "$DIM"
-    printf 'in content/input_markdown/, pages/ or eleventy_settings/, then rebuild.\n'
+    printf '%s%s/page/ and %s/index.html are build output - fix findings there\n' \\
+           "$DIM" "$SITE_DIR" "$SITE_DIR"
+    printf 'in %s/, pages/ or eleventy_settings/, then rebuild.\n' "$MEDIA_DIR"
     printf 'Missing media usually means a markdown file names a file that is not beside it.\n'
-    printf 'For metadata problems see content/page/status.html.%s\n' "$RST"
+    printf 'For metadata problems see %s/page/status.html.%s\n' "$SITE_DIR" "$RST"
 else
     printf '%sAll checks passed.%s\n' "$GRN" "$RST"
 fi
