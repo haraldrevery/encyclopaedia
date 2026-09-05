@@ -20,8 +20,13 @@
   <h2 class="media-section__title">Images</h2>
   <div class="image-grid">
     {% for image in images %}
+      {# Its own lightbox group, not the one the body images use. This block is
+         a set in its own right — the folder's files, in one place — so arrowing
+         through it should stay inside it. Sharing a name with the body put a
+         figure from the middle of the article one arrow-press away from a file
+         the article never mentioned. #}
       <a href="{{ image.url | rel }}" class="image-grid__item glightbox"
-         data-gallery="entry" data-title="{{ image.filename }}">
+         data-gallery="folder" data-title="{{ image.filename }}">
         <img src="{{ image.url | rel }}" alt="{{ image.filename }}" loading="lazy" decoding="async">
       </a>
     {% endfor %}

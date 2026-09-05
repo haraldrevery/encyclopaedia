@@ -125,10 +125,31 @@ test("prose between images splits them into separate runs", () => {
   assert.strictEqual(runCount(html), 2, html);
 });
 
-test("a lone image is not a run and keeps the page-wide lightbox group", () => {
+test("a lone image is not a run and opens as a gallery of one", () => {
   const html = runRender("![a](a.jpg)");
   assert.strictEqual(runCount(html), 0, html);
-  assert.ok(html.includes('data-gallery="entry"'), html);
+  assert.ok(html.includes('data-gallery="single-0"'), html);
+});
+
+test("two lone images never share a slider", () => {
+  // GLightbox groups by the data-gallery string alone, wherever the elements
+  // sit, so one shared name would let a figure in the middle of an article
+  // arrow into an unrelated one further down.
+  const html = runRender("![a](a.jpg)\n\nWords.\n\n![b](b.jpg)");
+  assert.ok(html.includes('data-gallery="single-0"'), html);
+  assert.ok(html.includes('data-gallery="single-1"'), html);
+});
+
+test("the same file embedded twice gets two distinct groups", () => {
+  const html = runRender("![a](a.jpg)\n\nWords.\n\n![a](a.jpg)");
+  assert.strictEqual((html.match(/data-gallery="single-\d+"/g) || []).length, 2, html);
+  assert.ok(!html.includes('data-gallery="entry"'), html);
+});
+
+test("lone images and runs never collide on a group name", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)\n\nWords.\n\n![a](a.jpg)");
+  const groups = html.match(/data-gallery="[^"]*"/g) || [];
+  assert.strictEqual(new Set(groups).size, 2, groups.join(" "));
 });
 
 test("a paragraph that also holds text is never a run", () => {
