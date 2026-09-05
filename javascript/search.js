@@ -147,7 +147,9 @@ function settle() {
    than once: already loaded, already failed, already in flight. */
 function loadIndex(src, onDone) {
     if (rows || failed) { onDone(); return; }
-    waiting.push(onDone);
+    // Deduped by identity, because render() now asks on every keystroke typed
+    // while the index is in flight. One stable closure per box, so one entry.
+    if (waiting.indexOf(onDone) < 0) waiting.push(onDone);
     if (loading) return;
     loading = true;
 
@@ -188,10 +190,16 @@ function wire(form) {
         input.setAttribute('aria-expanded', 'true');
     }
 
+    /* The list is emptied, not merely hidden. Enter falls back to the first row
+       when nothing is highlighted, so markup left behind by the previous query
+       stayed reachable with the panel shut: Escape cleared the box, and the
+       next Enter navigated to a result that was no longer on screen and no
+       longer matched anything the reader had typed. */
     function close() {
         panel.hidden = true;
         input.setAttribute('aria-expanded', 'false');
         input.removeAttribute('aria-activedescendant');
+        list.innerHTML = '';
         options = [];
         cursor = -1;
     }
@@ -211,7 +219,13 @@ function wire(form) {
         var query = input.value.trim();
         if (!query) return close();
         if (failed)  return message('Search is unavailable.');
-        if (!rows)   return message('Searching…');
+        // Focus is the usual trigger, but it can be missed altogether: this
+        // script is deferred while the box is revealed during head parsing, so
+        // a reader can focus and start typing before the listener below is
+        // wired, and that focus never comes back. The request is idempotent,
+        // so asking again here costs nothing and is the only thing standing
+        // between that reader and a panel stuck on "Searching…" for good.
+        if (!rows) { loadIndex(form.dataset.index, render); return message('Searching…'); }
 
         var found = search(query);
         if (!found.hits.length) return message('No entries match “' + query + '”.');
@@ -270,7 +284,8 @@ function wire(form) {
     }
 
     // Focus is the trigger, not the first keystroke: by the time a character
-    // has been typed the index has usually already arrived.
+    // has been typed the index has usually already arrived. It is not the only
+    // trigger — render() asks too, for the focus this never sees.
     input.addEventListener('focus', function () {
         loadIndex(form.dataset.index, render);
     }, { once: true });
@@ -284,9 +299,11 @@ function wire(form) {
         else if (event.key === 'Enter') {
             // Handled here rather than on submit so the highlighted row wins
             // over the first one.
-            var link = cursor >= 0
-                ? options[cursor].querySelector('a')
-                : list.querySelector('.nav-search__link');
+            // Gated on the panel being open: with nothing on screen there is
+            // nothing on offer, and Enter belongs to the form handler below.
+            var link = panel.hidden ? null
+                : cursor >= 0 ? options[cursor].querySelector('a')
+                              : list.querySelector('.nav-search__link');
             if (link) { event.preventDefault(); window.location.href = link.href; }
         }
     });
