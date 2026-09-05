@@ -23,7 +23,7 @@
   --text-mono: 1.24rem;
   --text-nav: 1.4rem;
 
-  --katex-font-size: 0.88rem;     /* MathML runs large against HaraldText */
+  --katex-font-size: 0.94rem;     /* MathML runs large against HaraldText */
   --text-line-row-space: 1.24;  /* tight line-height — headings, display text */
   --leading-body: 1.5;          /* body copy */
   --tracking-body: 0.0em;       /* global letter-spacing (space between characters) */
