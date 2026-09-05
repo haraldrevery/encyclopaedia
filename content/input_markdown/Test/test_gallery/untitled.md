@@ -7,6 +7,8 @@ category: Testing
 tags: [images, layout, justified, edge cases]
 ---
 
+These images should render as a coherent justified image grid.
+
 ![2024calle_de_quintavale.jpg](2024calle_de_quintavale.jpg)
 ![2024cortina3.jpg](2024cortina3.jpg)
 ![2024februari14landvetter.jpg](2024februari14landvetter.jpg)
