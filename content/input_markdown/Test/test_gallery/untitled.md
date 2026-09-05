@@ -14,3 +14,7 @@ These images should render as a coherent justified image grid.
 ![2024februari14landvetter.jpg](2024februari14landvetter.jpg)
 ![2024monfalcone_train_station.jpg](2024monfalcone_train_station.jpg)
 ![2024glaciers_and_snow.jpg](2024glaciers_and_snow.jpg)
+
+While this image below renders as a normal single image.
+
+![2024monfalcone_train_station.jpg](2024monfalcone_train_station.jpg)
