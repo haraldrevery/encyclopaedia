@@ -1273,6 +1273,66 @@
     .image-grid__item { background: var(--color-neutral-800); }
   }
 
+  /* ── Justified image runs ─────────────────────────────────────────────────
+     Consecutive images in a markdown body (see image_runs in lib/markdown.js).
+     Unlike .image-grid above, which crops every thumbnail to a square, this
+     keeps each photograph's real shape.
+
+     THE ROWS JUSTIFY THEMSELVES, with no JavaScript and no measuring. Each
+     item's flex-basis AND flex-grow are both its aspect ratio, so a row's free
+     space is shared out in proportion to it: every item ends up at
+     width = ratio x k for one shared k, which means every item in that row is
+     exactly k tall and the row fills the column precisely. The browser picks
+     the row breaks.
+
+     That proportionality is also why the reading-width button still works. The
+     layout is relative all the way down, so narrowing .post-container reflows
+     the rows — a build-time row-breaking algorithm would have had to bake one
+     container width in and would break the moment --reading-scale changed. */
+  .image-run {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--image-run-gap);
+    margin: 2rem 0;
+  }
+  .image-run__item {
+    /* --ar is written per item by the renderer, from the file's real pixel
+       size. The fallback matches FALLBACK_ASPECT in lib/markdown.js and only
+       applies to an image whose header could not be read — which the status
+       page reports rather than passing off in silence. */
+    flex-grow: var(--ar, 1.5);
+    flex-basis: calc(var(--ar, 1.5) * var(--image-run-row));
+    display: block;
+    overflow: hidden;
+    border-radius: var(--card-radius);
+    background: var(--color-neutral-200);
+  }
+  /* The margin and radius reset that this rule also needs lives in
+     input_prose.css, NOT here: base.njk loads prose.css after main.css and
+     `.prose img` matches at the same specificity, so a reset written here is
+     overruled by the stylesheet that comes later. See the note there. */
+  .image-run__item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform 0.5s ease, filter 0.5s ease;
+  }
+  .image-run__item:hover img { transform: scale(1.06); }
+
+  /* Zero-height tail items that keep a short last row at the target height
+     instead of letting one leftover photograph stretch across the column. They
+     take the same sizing as a middling-ratio item, and wrap away to nothing
+     when the last row is already full. See SPACERS in lib/markdown.js. */
+  .image-run__spacer {
+    flex-grow: 1.5;
+    flex-basis: calc(1.5 * var(--image-run-row));
+    height: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .image-run__item { background: var(--color-neutral-800); }
+  }
+
   .media-stack { display: flex; flex-direction: column; gap: 1.75rem; }
   .media-embed { width: 100%; max-width: 100%; border-radius: var(--card-radius); display: block; }
   .media-figure figcaption {

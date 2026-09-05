@@ -298,6 +298,35 @@ pageDescription: What the generator produced, what it had to guess, and what it 
     {% endif %}
   </section>
 
+  {# ── Unmeasured images ────────────────────────────────────────────────── #}
+  {% set sev = report.severity.dimensions %}
+  <section class="health-section" id="dimensions">
+    <h2 class="health-section__title{{ ' health-section__title--' + sev.level if health.dimensions.length }}">
+      {% if health.dimensions.length %}<span class="health-mark">{{ sev.mark }}</span>{% endif %}Unmeasured images
+    </h2>
+    {% if health.dimensions.length %}
+      <p class="health-section__lede">
+        Consecutive images in a document are laid out as a justified grid, which
+        needs each file's real pixel size. These could not be read, so they take
+        a 3:2 slot and will be the wrong shape next to their neighbours. They
+        still display, and still open in the lightbox.
+      </p>
+      <p class="health-section__lede">
+        Usually a truncated or partly written file, or an SVG with no
+        <code>width</code>, <code>height</code> or <code>viewBox</code>.
+      </p>
+      <ul class="health-list health-list--compact">
+        {% for row in health.dimensions %}
+          <li class="health-item health-item--{{ sev.level }}">
+            {{ findingPath(row.file, row.url, page.url) }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="health-ok">Every image's size was read from the file itself.</p>
+    {% endif %}
+  </section>
+
   {# ── Duplicate titles ─────────────────────────────────────────────────── #}
   {% set sev = report.severity.duplicates %}
   <section class="health-section" id="duplicates">

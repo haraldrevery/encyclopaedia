@@ -128,6 +128,28 @@
   margin: 2rem 0;
 }
 
+/* ── Justified image runs inside an article ────────────────────────────────
+   The run itself is styled in input.css; only the overrides of the .prose
+   rules above and below can live here, because prose.css is loaded AFTER
+   main.css and both would otherwise match at the same specificity — the
+   `margin: 2rem 0` immediately above won that fight and padded every
+   photograph away from the edges of its own slot by two rems top and bottom,
+   which is visible as a gap inside each rounded corner. */
+.prose .image-run img {
+  margin: 0;
+  border-radius: 0;
+}
+
+/* Each item is a link, so it picks up the article link styling: an underline
+   that draws under the picture, and a hover that fades the whole photograph to
+   60%. Neither is wanted on an image — the zoom in input.css is the hover. */
+.prose .image-run__item {
+  text-decoration: none;
+}
+.prose .image-run__item:hover {
+  opacity: 1;
+}
+
 .prose li {
   font-size: var(--text-body);
   line-height: var(--leading-body);

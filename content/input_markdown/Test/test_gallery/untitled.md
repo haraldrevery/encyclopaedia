@@ -18,3 +18,5 @@ These images should render as a coherent justified image grid.
 While this image below renders as a normal single image.
 
 ![2024monfalcone_train_station.jpg](2024monfalcone_train_station.jpg)
+
+Some text. One image should show up after this as the complementary rest images.

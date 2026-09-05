@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { demoteHeadings, addAnchors, toc, render } = require("../lib/markdown");
+const { demoteHeadings, addAnchors, toc, render, bodyImages, imageKey } = require("../lib/markdown");
 
 test("demoteHeadings leaves a body with no h1 untouched", () => {
   const html = "<h2>B</h2><h3>C</h3>";
@@ -89,4 +89,129 @@ test("media rewriting still rewrites real images outside code", () => {
 test("a tilde fence is closed only by a tilde fence", () => {
   const html = render("~~~\n![a](rel.jpg)\n~~~\n", "/page/x.html", "/m", "f.md", { rewriteLinks: true });
   assert.ok(html.includes("![a](rel.jpg)"), html);
+});
+
+
+// ── Justified image runs ────────────────────────────────────────────────────
+
+/** Dimensions for a.jpg/b.jpg/c.jpg as if scan.js had read them. */
+const DIMS = new Map([
+  ["a.jpg", { width: 400, height: 200 }],   // 2.0
+  ["b.jpg", { width: 300, height: 400 }],   // 0.75
+  ["c.jpg", { width: 600, height: 400 }],   // 1.5
+]);
+
+const runRender = (src) =>
+  render(src, "/page/x.html", "/m", "doc.md", { rewriteLinks: true, dims: DIMS });
+
+const runCount = (html) => (html.match(/class="image-run"/g) || []).length;
+const itemCount = (html) => (html.match(/class="image-run__item/g) || []).length;
+
+test("consecutive images become one image run", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)\n![c](c.jpg)");
+  assert.strictEqual(runCount(html), 1, html);
+  assert.strictEqual(itemCount(html), 3, html);
+});
+
+test("a blank line between images does not break the run", () => {
+  // Obsidian tends to write embeds with blank lines between them.
+  const html = runRender("![a](a.jpg)\n\n![b](b.jpg)\n\n![c](c.jpg)");
+  assert.strictEqual(runCount(html), 1, html);
+  assert.strictEqual(itemCount(html), 3, html);
+});
+
+test("prose between images splits them into separate runs", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)\n\nWords.\n\n![a](a.jpg)\n![c](c.jpg)");
+  assert.strictEqual(runCount(html), 2, html);
+});
+
+test("a lone image is not a run and keeps the page-wide lightbox group", () => {
+  const html = runRender("![a](a.jpg)");
+  assert.strictEqual(runCount(html), 0, html);
+  assert.ok(html.includes('data-gallery="entry"'), html);
+});
+
+test("a paragraph that also holds text is never a run", () => {
+  const html = runRender("![a](a.jpg) and ![b](b.jpg)");
+  assert.strictEqual(runCount(html), 0, html);
+});
+
+test("images the author wrapped in their own links are left alone", () => {
+  // The link tokens are not images, so the paragraph fails the test — and the
+  // author's link must survive rather than becoming a lightbox anchor.
+  const html = runRender("[![a](a.jpg)](one.html)\n[![b](b.jpg)](two.html)");
+  assert.strictEqual(runCount(html), 0, html);
+  assert.ok(html.includes("one.html"), html);
+});
+
+test("a fenced code block of images is never grouped", () => {
+  const html = runRender("```\n![a](a.jpg)\n![b](b.jpg)\n```\n");
+  assert.strictEqual(runCount(html), 0, html);
+  assert.ok(html.includes("![a](a.jpg)"), html);
+});
+
+test("each item carries its real aspect ratio and pixel size", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)");
+  assert.ok(html.includes("--ar:2.0000"), html);
+  assert.ok(html.includes("--ar:0.7500"), html);
+  assert.ok(html.includes('width="400" height="200"'), html);
+});
+
+test("an image with no known size falls back rather than disappearing", () => {
+  const html = runRender("![a](a.jpg)\n![z](unknown.jpg)");
+  assert.strictEqual(itemCount(html), 2, html);
+  assert.ok(html.includes("--ar:1.5000"), html);
+  // No width/height attribute may be invented for a file we never measured.
+  assert.ok(!/unknown\.jpg" alt="z" width=/.test(html), html);
+});
+
+test("each run gets its own lightbox group", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)\n\nWords.\n\n![a](a.jpg)\n![c](c.jpg)");
+  assert.ok(html.includes('data-gallery="run-0"'), html);
+  assert.ok(html.includes('data-gallery="run-1"'), html);
+});
+
+test("a run emits a div and never a div inside a paragraph", () => {
+  const html = runRender("![a](a.jpg)\n![b](b.jpg)");
+  assert.ok(!/<p>\s*<div class="image-run"/.test(html), html);
+});
+
+test("alt text is escaped into both the title and the alt attribute", () => {
+  const html = runRender('![x" onerror="alert(1)](a.jpg)\n![b](b.jpg)');
+  assert.ok(!html.includes('onerror="alert'), html);
+  assert.ok(html.includes("&quot;"), html);
+});
+
+test("bodyImages reports every image the body embedded, run or not", () => {
+  runRender("![a](a.jpg)\n![b](b.jpg)\n\nWords.\n\n![c](c.jpg)");
+  assert.deepStrictEqual([...bodyImages()].sort(), ["a.jpg", "b.jpg", "c.jpg"]);
+});
+
+test("bodyImages resolves against the document's own folder", () => {
+  render("![a](a.jpg)\n![b](../shared/b.jpg)", "/page/x.html", "/m", "deep/folder/doc.md", {});
+  assert.deepStrictEqual([...bodyImages()].sort(), ["deep/folder/a.jpg", "deep/shared/b.jpg"]);
+});
+
+test("bodyImages is reset per document, so it never leaks between pages", () => {
+  runRender("![a](a.jpg)\n![b](b.jpg)");
+  runRender("Nothing here.");
+  assert.deepStrictEqual([...bodyImages()], []);
+});
+
+test("bodyImages ignores external images, which no folder owns", () => {
+  runRender("![a](https://example.com/a.jpg)\n![b](b.jpg)");
+  assert.deepStrictEqual([...bodyImages()], ["b.jpg"]);
+});
+
+test("imageKey agrees with the keys bodyImages produces", () => {
+  // library.js filters the folder's image list with imageKey(); if the two ever
+  // disagreed the bottom gallery would silently stop hiding anything.
+  render("![a](a.jpg)", "/page/x.html", "/m", "deep/folder/doc.md", {});
+  assert.ok(bodyImages().has(imageKey("deep/folder", "a.jpg")));
+});
+
+test("obsidian embeds group and are reported like markdown images", () => {
+  const html = render("![[a.jpg]]\n![[b.jpg]]", "/page/x.html", "/m", "doc.md", { dims: DIMS });
+  assert.strictEqual(runCount(html), 1, html);
+  assert.deepStrictEqual([...bodyImages()].sort(), ["a.jpg", "b.jpg"]);
 });

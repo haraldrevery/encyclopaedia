@@ -66,6 +66,14 @@
   --card-radius: 0.5rem;
   --nav-height: 3.25rem;
 
+  /* Justified image runs in a markdown body (.image-run in input.css).
+     --image-run-row is the TARGET row height, not a fixed one: it sets each
+     item's flex-basis, so it decides how many photographs the browser fits on
+     a row, and the row's real height then falls out of the aspect ratios that
+     landed there. Raise it for fewer, larger images per row. */
+  --image-run-row: 13rem;
+  --image-run-gap: 0.5rem;
+
   /* Optical centring for the nav bar. HaraldMono's glyphs sit high in their
      em-box, so the bar's `items-center` centres the box but not the ink, and
      the text reads as too high. This shifts everything in the bar as a unit —

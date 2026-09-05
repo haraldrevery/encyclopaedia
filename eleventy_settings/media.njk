@@ -6,11 +6,20 @@
 #}
 {% set media = folder.media %}
 
-{% if media.images.length %}
+{#
+  The images this page has NOT already shown. library.js works it out per
+  document, because folder.media is shared by every entry in the folder and
+  filtering it there would hide a photograph from a sibling page that never
+  embedded it. The fallback keeps this template working for any caller that
+  has no variant — today only entry.njk includes it.
+#}
+{% set images = variant.unusedImages if variant.unusedImages is defined else media.images %}
+
+{% if images.length %}
 <section class="media-section">
   <h2 class="media-section__title">Images</h2>
   <div class="image-grid">
-    {% for image in media.images %}
+    {% for image in images %}
       <a href="{{ image.url | rel }}" class="image-grid__item glightbox"
          data-gallery="entry" data-title="{{ image.filename }}">
         <img src="{{ image.url | rel }}" alt="{{ image.filename }}" loading="lazy" decoding="async">
